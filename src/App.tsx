@@ -19,6 +19,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { ProcessSortKey, Processes } from "./pages/Processes";
 import { Settings } from "./pages/Settings";
 import { Startup } from "./pages/Startup";
+import { Storage } from "./pages/Storage";
 import { ShellKind, Terminal, TerminalRequest } from "./pages/Terminal";
 
 export default function App() {
@@ -63,8 +64,8 @@ function AppShell() {
         setPaletteOpen((open) => !open);
         return;
       }
-      // Ctrl+1..7 jump to the pages in sidebar order.
-      if (e.ctrlKey && !e.shiftKey && !e.altKey && /^[1-7]$/.test(e.key)) {
+      // Ctrl+1..9 jump to the pages in sidebar order.
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && /^[1-9]$/.test(e.key)) {
         const target = PAGES[Number(e.key) - 1];
         if (target) {
           e.preventDefault();
@@ -233,6 +234,7 @@ function AppShell() {
             />
           </div>
           {page === "startup" && <Startup elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} />}
+          {page === "storage" && <Storage elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} disks={m?.disks ?? []} />}
           {page === "activity" && <Activity elevated={appInfo.elevated} />}
           {page === "settings" && <Settings appInfo={appInfo} onRestartAsAdmin={restartAsAdmin} />}
         </main>

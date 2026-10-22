@@ -21,6 +21,9 @@ pub enum Undo {
     Priority { pid: u32, start_time: u64, name: String, previous: Priority },
     #[serde(rename_all = "camelCase")]
     RestoreCommand { command: SavedCommand },
+    /// Puts files moved to the Recycle Bin back (`deleted_at` in Unix seconds).
+    #[serde(rename_all = "camelCase")]
+    RestoreFromRecycleBin { paths: Vec<String>, deleted_at: i64 },
     /// An entry written by a newer version; kept, but it can't be undone here.
     #[serde(other)]
     Unknown,
@@ -99,6 +102,7 @@ impl ActivityLog {
             Undo::RestoreCommand { command } => {
                 app.state::<CommandLibrary>().upsert(app, command.clone())?;
             }
+            Undo::RestoreFromRecycleBin { paths, deleted_at } => crate::storage::restore_from_recycle_bin(paths, *deleted_at)?,
             Undo::Unknown => return Err("This action can't be undone".into()),
         }
         self.with(app, |list| {
@@ -129,6 +133,12 @@ mod tests {
         let list: Vec<ActionRecord> = serde_json::from_str(json).unwrap();
         assert!(matches!(list[0].undo, Some(Undo::Unknown)));
         assert_eq!(list[1].detail, None);
+    }
+
+    #[test]
+    fn reads_recycle_bin_undo() {
+        let json = r#"{"type":"restoreFromRecycleBin","paths":["C:\\Users\\me\\old.zip"],"deletedAt":1760000000}"#;
+        assert!(matches!(serde_json::from_str::<Undo>(json).unwrap(), Undo::RestoreFromRecycleBin { deleted_at: 1760000000, .. }));
     }
 
     #[test]

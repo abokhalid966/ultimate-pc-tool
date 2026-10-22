@@ -6,6 +6,7 @@ mod os;
 mod processes;
 mod settings;
 mod startup;
+mod storage;
 mod store;
 mod terminal;
 mod tray;
@@ -314,7 +315,9 @@ pub fn run() {
     tauri::Builder::default()
         // First, so a second launch just brings this window back instead of starting another copy.
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| tray::show_main_window(app)))
+        .plugin(tauri_plugin_dialog::init())
         .manage(snapshot.clone())
+        .manage(storage::Scans::default())
         .manage(CommandLibrary::default())
         .manage(ActivityLog::default())
         .manage(Terminals::default())
@@ -400,6 +403,15 @@ pub fn run() {
             list_activity,
             undo_activity,
             clear_activity,
+            storage::storage_cleanup_scan,
+            storage::storage_cleanup_run,
+            storage::storage_scan,
+            storage::storage_cancel_scan,
+            storage::storage_folder,
+            storage::storage_check_delete,
+            storage::storage_delete,
+            storage::storage_reveal,
+            storage::storage_pick_folder,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
