@@ -2,6 +2,7 @@
 // and saves one PNG per sidebar page, plus a few interaction states (details pane, command
 // output, dialogs, palette) and the same at the smallest window size. Usage:
 //   pnpm dev   (in another shell, serves http://localhost:1420)
+// Set SCREENSHOT_URL to use another server, e.g. `pnpm vite --port 1450` + SCREENSHOT_URL=http://localhost:1450
 //   node dev/screenshot.cjs <outDir> [light|dark]
 const path = require("path");
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || "/opt/node22/lib/node_modules/playwright");
@@ -16,7 +17,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_PATH || "/opt/node22/lib/nod
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
   await page.addInitScript({ path: path.join(__dirname, "mock-tauri.js") });
-  await page.goto("http://localhost:1420");
+  await page.goto(process.env.SCREENSHOT_URL || "http://localhost:1420");
   await page.waitForTimeout(3500);
 
   const shot = (file) => page.screenshot({ path: path.join(out, file) });
