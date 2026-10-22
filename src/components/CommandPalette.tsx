@@ -1,25 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  ArrowDown,
-  ArrowUp,
-  Brush,
-  CircleX,
-  CornerDownLeft,
-  Gauge,
-  HeartPulse,
-  Lock,
-  LucideIcon,
-  Monitor,
-  Moon,
-  Search,
-  Settings as SettingsIcon,
-  ShieldCheck,
-  SquareTerminal,
-  Sun,
-  Terminal as TerminalIcon,
-  Box,
-  X,
-} from "lucide-react";
+import { ArrowDown, ArrowUp, Box, Brush, CircleX, CornerDownLeft, Gauge, HeartPulse, Lock, LucideIcon, Monitor, Moon, PictureInPicture2, Power, Search, Settings as SettingsIcon, ShieldCheck, SquareTerminal, Sun, Terminal as TerminalIcon, X } from "lucide-react";
 import { api, CloseAction, errorText, ProcessInfo, SavedCommand } from "../api";
 import type { NavigateOptions } from "../App";
 import { useEndProcesses } from "../hooks/useActions";
@@ -199,6 +179,33 @@ export function CommandPalette({ elevated, onClose, onNavigate, onRunCommand, on
         run: launch("Lock PC", "rundll32.exe user32.dll,LockWorkStation", "Locking your PC…"),
       },
     ];
+    quick.push(
+      {
+        id: "q-overlay",
+        group: "Actions",
+        label: "Show or hide the mini overlay",
+        hint: "Live stats on top of other windows",
+        keywords: "overlay fps hud always on top widget stats",
+        icon: PictureInPicture2,
+        type: "Action",
+        run: () =>
+          api
+            .settings()
+            .then((st) => api.setOverlay(!st.overlay).then(() => toast(st.overlay ? "Mini overlay closed." : "Mini overlay is on. Drag it anywhere.", "success"))),
+      },
+      {
+        id: "q-autostart",
+        group: "Settings",
+        label: "Start with Windows: on or off",
+        keywords: "autostart startup boot login sign in tray",
+        icon: Power,
+        type: "Setting",
+        run: () =>
+          api
+            .getAutostart()
+            .then((on) => api.setAutostart(!on).then(() => toast(on ? "Optimo won't start with Windows." : "Optimo will start with Windows, in the tray.", "success"))),
+      },
+    );
     if (!elevated) {
       quick.push({
         id: "q-admin",

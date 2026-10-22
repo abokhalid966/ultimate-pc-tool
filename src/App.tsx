@@ -23,6 +23,7 @@ import { Services } from "./pages/Services";
 import { Settings } from "./pages/Settings";
 import { Startup } from "./pages/Startup";
 import { Storage } from "./pages/Storage";
+import { Automations } from "./pages/Automations";
 import { ShellKind, Terminal, TerminalRequest } from "./pages/Terminal";
 
 export default function App() {
@@ -240,6 +241,7 @@ function AppShell() {
           {page === "startup" && <Startup elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} />}
           {page === "apps" && <Apps elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} />}
           {page === "services" && <Services elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} />}
+          {page === "automations" && <Automations elevated={appInfo.elevated} />}
           {page === "storage" && <Storage elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} disks={m?.disks ?? []} />}
           {page === "activity" && <Activity elevated={appInfo.elevated} />}
           {page === "settings" && <Settings appInfo={appInfo} onRestartAsAdmin={restartAsAdmin} />}

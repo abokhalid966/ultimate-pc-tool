@@ -1,10 +1,14 @@
 mod actions;
+mod alerts;
 mod apps;
+mod automations;
+mod autostart;
 mod cleanup;
 mod commands;
 mod health;
 mod metrics;
 mod os;
+mod overlay;
 mod processes;
 mod services;
 mod settings;
@@ -75,6 +79,11 @@ fn take_notices() -> Vec<String> {
 #[tauri::command]
 fn get_settings(settings: State<SettingsStore>) -> Settings {
     settings.get()
+}
+
+#[tauri::command(async)]
+fn set_alerts(app: AppHandle, settings: State<SettingsStore>, alerts: settings::AlertSettings) -> Result<(), String> {
+    settings.update(&app, |s| s.alerts = alerts)
 }
 
 #[tauri::command(async)]
@@ -320,7 +329,15 @@ pub fn run() {
         // First, so a second launch just brings this window back instead of starting another copy.
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| tray::show_main_window(app)))
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_notification::init())
+        // Remembers where the windows were. Showing or hiding stays with the app (tray, --minimized).
+        .plugin(
+            tauri_plugin_window_state::Builder::new()
+                .with_state_flags(tauri_plugin_window_state::StateFlags::all() - tauri_plugin_window_state::StateFlags::VISIBLE)
+                .build(),
+        )
         .manage(snapshot.clone())
+        .manage(automations::Automations::default())
         .manage(storage::Scans::default())
         .manage(CommandLibrary::default())
         .manage(ActivityLog::default())
@@ -336,7 +353,19 @@ pub fn run() {
             }
             app.manage(SettingsStore::load(app.handle()));
             tray::setup(app.handle())?;
+            // Started by Windows at sign-in: stay in the tray.
+            if autostart::started_minimized() {
+                metrics::set_ui_visible(false);
+            } else if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+            }
             metrics::start_sampler(app.handle().clone(), snapshot);
+            if app.state::<SettingsStore>().get().overlay
+                && let Err(e) = overlay::apply(app.handle(), true)
+            {
+                store::notice(app.handle(), e);
+            }
+            automations::start_scheduler(app.handle().clone());
             let handle = app.handle().clone();
             std::thread::spawn(move || {
                 handle.state::<OverviewCache>().get();
@@ -350,6 +379,12 @@ pub fn run() {
             }
         })
         .on_window_event(|window, event| {
+            if window.label() == overlay::LABEL {
+                if let WindowEvent::Destroyed = event {
+                    metrics::set_overlay_visible(false);
+                }
+                return;
+            }
             if window.label() != "main" {
                 return;
             }
@@ -383,6 +418,16 @@ pub fn run() {
             take_notices,
             get_settings,
             set_close_action,
+            set_alerts,
+            autostart::get_autostart,
+            autostart::set_autostart,
+            overlay::set_overlay,
+            overlay::show_main,
+            automations::list_automations,
+            automations::save_automation,
+            automations::set_automation_enabled,
+            automations::delete_automation,
+            automations::run_automation,
             close_main_window,
             get_overview,
             get_metrics,

@@ -3072,3 +3072,8 @@ button.pill:hover {
     animation-iteration-count: infinite !important;
   }
 }
+
+/* Indented follow-up rows, e.g. the alert limits under the alerts switch. */
+.settings-sub {
+  padding-left: 54px;
+}

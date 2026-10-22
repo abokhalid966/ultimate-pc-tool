@@ -1,0 +1,104 @@
+/* Mini overlay window. Uses the tokens from styles.css. */
+
+html.overlay-doc,
+html.overlay-doc body,
+html.overlay-doc #root {
+  height: 100%;
+  overflow: hidden;
+  background: var(--card);
+}
+.ov {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  height: 100%;
+  padding: 8px 12px 12px;
+  box-sizing: border-box;
+  font-size: 12px;
+  cursor: default;
+  user-select: none;
+}
+.ov-head {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-right: -6px;
+}
+.ov-brand {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-3);
+}
+.ov-btn {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: var(--radius-xs, 4px);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.ov-btn:hover {
+  background: var(--fill-subtle);
+  color: var(--text);
+}
+.ov-row {
+  display: grid;
+  grid-template-columns: 32px 1fr 36px;
+  align-items: center;
+  gap: 8px;
+}
+.ov-label {
+  font-weight: 600;
+  color: var(--text-2);
+}
+.ov-bar {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--track);
+  overflow: hidden;
+}
+.ov-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ok);
+  transition: width 0.4s var(--ease);
+}
+.ov-bar > .warn {
+  background: var(--warn);
+}
+.ov-bar > .danger {
+  background: var(--danger);
+}
+.ov-num {
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.ov-net {
+  display: flex;
+  gap: 10px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ov-net span {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.ov-temp {
+  margin-left: auto;
+}
+.ov-temp.warn {
+  color: var(--warn);
+}
+.ov-temp.danger {
+  color: var(--danger);
+}

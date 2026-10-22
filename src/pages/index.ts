@@ -1,6 +1,6 @@
-import { Activity, Gauge, HardDrive, HeartPulse, LayoutGrid, ListTree, Power, ServerCog, Settings, SquareTerminal, Zap } from "lucide-react";
+import { Activity, CalendarClock, Gauge, HardDrive, HeartPulse, LayoutGrid, ListTree, Power, ServerCog, Settings, SquareTerminal, Zap } from "lucide-react";
 
-export type PageId = "dashboard" | "health" | "processes" | "commands" | "terminal" | "startup" | "apps" | "services" | "storage" | "activity" | "settings";
+export type PageId = "dashboard" | "health" | "processes" | "commands" | "automations" | "terminal" | "startup" | "apps" | "services" | "storage" | "activity" | "settings";
 
 export interface PageInfo {
   id: PageId;
@@ -21,9 +21,10 @@ export const PAGES: PageInfo[] = [
   { id: "services", label: "Services", description: "Background programs for Windows and your apps", icon: ServerCog, section: "Manage" },
   { id: "storage", label: "Storage", description: "Free up disk space and see what fills your drives", icon: HardDrive, section: "Manage" },
   { id: "commands", label: "Quick fixes", description: "One-click fixes and your saved commands", icon: Zap, section: "Tools" },
+  { id: "automations", label: "Automations", description: "Run cleanups, update checks and fixes on a schedule", icon: CalendarClock, section: "Tools" },
   { id: "terminal", label: "Terminal", description: "PowerShell, Command Prompt and WSL", icon: SquareTerminal, section: "Tools" },
   { id: "activity", label: "Activity", description: "History of changes, with undo", icon: Activity, section: "History" },
-  { id: "settings", label: "Settings", description: "Theme, close button and app info", icon: Settings, section: null },
+  { id: "settings", label: "Settings", description: "Theme, start with Windows, alerts and overlay", icon: Settings, section: null },
 ];
 
 export const SECTIONS = ["Monitor", "Manage", "Tools", "History"] as const;

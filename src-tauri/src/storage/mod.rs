@@ -19,7 +19,8 @@ use tauri::{AppHandle, Manager, State};
 
 use crate::actions::{ActivityLog, Undo};
 use crate::blocking;
-use cleaner::{CleanupCategory, CleanupKind, CleanupResult, CleanupRunEvent};
+pub use cleaner::CleanupKind;
+use cleaner::{CleanupCategory, CleanupResult, CleanupRunEvent};
 use safety::{Rules, Scope, Verdict};
 use scan::{FolderView, Tree};
 
@@ -48,15 +49,9 @@ pub async fn storage_cleanup_scan(on_event: Channel<CleanupCategory>) -> Result<
 #[tauri::command]
 pub async fn storage_cleanup_run(app: AppHandle, kinds: Vec<CleanupKind>, on_event: Channel<CleanupRunEvent>) -> Result<CleanupSummary, String> {
     blocking(move || {
-        let results = cleaner::clean(&kinds, |e| {
+        let summary = summarize(cleaner::clean(&kinds, |e| {
             let _ = on_event.send(e);
-        });
-        let summary = CleanupSummary {
-            bytes: results.iter().map(|r| r.bytes).sum(),
-            files: results.iter().map(|r| r.files).sum(),
-            skipped: results.iter().map(|r| r.skipped).sum(),
-            results,
-        };
+        }));
         let cleaned: Vec<&CleanupResult> = summary.results.iter().filter(|r| r.error.is_none() && r.files > 0).collect();
         if !cleaned.is_empty() {
             let names = join_names(&cleaned.iter().map(|r| r.label).collect::<Vec<_>>());
@@ -76,8 +71,22 @@ pub async fn storage_cleanup_run(app: AppHandle, kinds: Vec<CleanupKind>, on_eve
     .await
 }
 
+/// Cleans without reporting progress (for automations). Not logged: the caller does that.
+pub fn clean(kinds: &[CleanupKind]) -> CleanupSummary {
+    summarize(cleaner::clean(kinds, |_| {}))
+}
+
+fn summarize(results: Vec<CleanupResult>) -> CleanupSummary {
+    CleanupSummary {
+        bytes: results.iter().map(|r| r.bytes).sum(),
+        files: results.iter().map(|r| r.files).sum(),
+        skipped: results.iter().map(|r| r.skipped).sum(),
+        results,
+    }
+}
+
 /// "a, b and c"
-fn join_names(names: &[&str]) -> String {
+pub fn join_names(names: &[&str]) -> String {
     match names {
         [] => String::new(),
         [one] => (*one).to_string(),

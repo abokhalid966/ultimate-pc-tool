@@ -175,7 +175,18 @@ window.__TAURI_INTERNALS__ = (() => {
     { name: "RtkAudUService", command: '"C:\\Windows\\System32\\DriverStore\\FileRepository\\realtekservice.inf_amd64\\RtkAudUService64.exe" -background', source: "machineRun", location: "Registry (all users)", enabled: true, needsAdmin: true },
     { name: "Notes.lnk", command: "C:\\Users\\me\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\Notes.lnk", source: "userFolder", location: "Startup folder (current user)", enabled: true, needsAdmin: false },
   ];
-  const settings = { closeAction: null };
+  const settings = { closeAction: null, alerts: { enabled: true, cpuPercent: 90, memoryPercent: 90, temperature: 90, diskFreePercent: 10 }, overlay: false };
+  let autostart = false;
+  const HOUR = 3600e3;
+  const autos = [
+    { id: "clean-temp", name: "Clean temporary files", task: { type: "cleanup", kinds: ["userTemp", "thumbnails", "errorReports"] }, schedule: { type: "weekly", day: 0, minute: 720 }, enabled: true, builtin: true, armedAt: 0, lastRun: { at: Date.now() - 50 * HOUR, ok: true, summary: "Freed 2.31 GB (18,204 files)" } },
+    { id: "clean-browsers", name: "Clear browser caches", task: { type: "cleanup", kinds: ["edge", "chrome", "brave", "firefox"] }, schedule: { type: "weekly", day: 0, minute: 725 }, enabled: false, builtin: true, armedAt: 0, lastRun: null },
+    { id: "check-updates", name: "Check for app updates", task: { type: "checkUpdates" }, schedule: { type: "daily", minute: 600 }, enabled: true, builtin: true, armedAt: 0, lastRun: { at: Date.now() - 5 * HOUR, ok: true, summary: "3 updates available: Google Chrome, Zoom, 7-Zip" } },
+    { id: "health-check", name: "Check why the PC is slow", task: { type: "healthCheck" }, schedule: { type: "weekly", day: 1, minute: 660 }, enabled: false, builtin: true, armedAt: 0, lastRun: null },
+    { id: "flush-dns", name: "Flush DNS", task: { type: "command", commandId: "builtin.flush-dns" }, schedule: { type: "appStart" }, enabled: false, builtin: true, armedAt: 0, lastRun: null },
+    { id: "clean-windows", name: "Clean Windows Update leftovers", task: { type: "cleanup", kinds: ["windowsUpdate", "deliveryOptimization", "windowsTemp"] }, schedule: { type: "weekly", day: 0, minute: 730 }, enabled: true, builtin: true, armedAt: 0, lastRun: { at: Date.now() - 49 * HOUR, ok: false, summary: "Needs administrator rights. Start Optimo as administrator to let this run." } },
+  ];
+  const autoRunning = new Set();
 
   // ---- PC health ----
   // Matches the rest of the mock: Chrome is busy, D: is nearly full (see metrics), six startup
@@ -518,6 +529,39 @@ window.__TAURI_INTERNALS__ = (() => {
     get_settings: () => ({ ...settings }),
     set_close_action: ({ action }) => {
       settings.closeAction = action;
+    },
+    set_alerts: ({ alerts }) => {
+      settings.alerts = alerts;
+    },
+    get_autostart: () => autostart,
+    set_autostart: ({ enabled }) => {
+      autostart = enabled;
+    },
+    set_overlay: ({ show }) => {
+      settings.overlay = show;
+    },
+    show_main: () => {},
+    list_automations: () => autos.map((a) => ({ ...a, running: autoRunning.has(a.id), nextRun: a.enabled && a.schedule.type !== "appStart" ? Date.now() + 26 * HOUR : null })),
+    save_automation: ({ automation }) => {
+      if (!automation.name.trim()) fail("Give it a name.");
+      const i = autos.findIndex((a) => a.id === automation.id);
+      if (i >= 0) autos[i] = { ...autos[i], ...automation };
+      else autos.push({ ...automation, id: `auto-${Date.now()}`, builtin: false, armedAt: Date.now(), lastRun: null });
+    },
+    set_automation_enabled: ({ id, enabled }) => {
+      autos.find((a) => a.id === id).enabled = enabled;
+    },
+    delete_automation: ({ id }) => {
+      autos.splice(autos.findIndex((a) => a.id === id), 1);
+    },
+    run_automation: ({ id }) => {
+      autoRunning.add(id);
+      emit("automations://changed");
+      setTimeout(() => {
+        autoRunning.delete(id);
+        autos.find((a) => a.id === id).lastRun = { at: Date.now(), ok: true, summary: "Finished" };
+        emit("automations://changed");
+      }, 1200);
     },
     close_main_window: ({ action, remember }) => {
       if (remember) settings.closeAction = action;

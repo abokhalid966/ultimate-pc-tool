@@ -17,7 +17,7 @@ use crate::os;
 use crate::store;
 
 const FILE: &str = "commands.json";
-const BUILTIN_PREFIX: &str = "builtin.";
+pub const BUILTIN_PREFIX: &str = "builtin.";
 /// Commands that run longer than this are stopped.
 const RUN_TIMEOUT: Duration = Duration::from_secs(10 * 60);
 /// How much output is kept per stream (the newest part).
@@ -144,7 +144,7 @@ const LEGACY_DESCRIPTIONS: &[(&str, &str)] = &[
     ("list-updates", "See which apps have updates available"),
 ];
 
-fn defaults() -> Vec<SavedCommand> {
+pub fn defaults() -> Vec<SavedCommand> {
     vec![
         builtin("flush-dns", "Flush DNS", "Fixes websites that won't load or open the wrong page, by clearing saved web addresses.", "ipconfig /flushdns", false, "Network"),
         builtin("ip-config", "Show IP configuration", "Shows your network addresses, router and DNS details for every connection.", "ipconfig /all", false, "Network"),

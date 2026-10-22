@@ -276,7 +276,7 @@ pub async fn run_health_check(on_event: Channel<HealthEvent>) -> Result<HealthRe
     crate::blocking(move || run(&on_event)).await
 }
 
-fn run(events: &Channel<HealthEvent>) -> Result<HealthReport, String> {
+pub fn run(events: &Channel<HealthEvent>) -> Result<HealthReport, String> {
     if RUNNING.swap(true, Ordering::SeqCst) {
         return Err("A speed check is already running. It takes about five seconds.".into());
     }

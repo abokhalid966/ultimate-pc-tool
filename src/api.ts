@@ -47,9 +47,49 @@ export interface AppInfo {
 
 export type CloseAction = "tray" | "quit";
 
+export interface AlertSettings {
+  enabled: boolean;
+  /** 0 turns that alert off. */
+  cpuPercent: number;
+  memoryPercent: number;
+  temperature: number;
+  diskFreePercent: number;
+}
+
 export interface Settings {
   /** `null` until the user chooses; the app asks the first time the window is closed. */
   closeAction: CloseAction | null;
+  alerts: AlertSettings;
+  overlay: boolean;
+}
+
+export type AutomationTask =
+  | { type: "cleanup"; kinds: CleanupKind[] }
+  | { type: "command"; commandId: string }
+  | { type: "checkUpdates" }
+  | { type: "healthCheck" };
+
+export type Schedule =
+  | { type: "appStart" }
+  | { type: "daily"; minute: number }
+  /** `day`: 0 = Sunday … 6 = Saturday. */
+  | { type: "weekly"; day: number; minute: number }
+  | { type: "hours"; every: number };
+
+export interface Automation {
+  id: string;
+  name: string;
+  task: AutomationTask;
+  schedule: Schedule;
+  enabled: boolean;
+  builtin: boolean;
+  armedAt: number;
+  lastRun: { at: number; ok: boolean; summary: string } | null;
+}
+
+export interface AutomationInfo extends Automation {
+  running: boolean;
+  nextRun: number | null;
 }
 
 export interface ProcessInfo {
@@ -421,6 +461,16 @@ export const api = {
   takeNotices: () => invoke<string[]>("take_notices"),
   settings: () => invoke<Settings>("get_settings"),
   setCloseAction: (action: CloseAction | null) => invoke<void>("set_close_action", { action }),
+  setAlerts: (alerts: AlertSettings) => invoke<void>("set_alerts", { alerts }),
+  getAutostart: () => invoke<boolean>("get_autostart"),
+  setAutostart: (enabled: boolean) => invoke<void>("set_autostart", { enabled }),
+  setOverlay: (show: boolean) => invoke<void>("set_overlay", { show }),
+  showMain: () => invoke<void>("show_main"),
+  listAutomations: () => invoke<AutomationInfo[]>("list_automations"),
+  saveAutomation: (automation: Automation) => invoke<void>("save_automation", { automation }),
+  setAutomationEnabled: (id: string, enabled: boolean) => invoke<void>("set_automation_enabled", { id, enabled }),
+  deleteAutomation: (id: string) => invoke<void>("delete_automation", { id }),
+  runAutomation: (id: string) => invoke<void>("run_automation", { id }),
   closeMainWindow: (action: CloseAction, remember: boolean) => invoke<void>("close_main_window", { action, remember }),
 
   overview: () => invoke<SystemOverview>("get_overview"),

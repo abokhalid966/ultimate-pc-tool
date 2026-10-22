@@ -1,7 +1,8 @@
 //! Background sampler: refreshes system metrics and the process table once per
 //! second while the window is visible, caches the latest snapshot, and pushes it
 //! to the UI as an event. While the app sits hidden in the tray it only samples
-//! CPU and memory, for the tray tooltip.
+//! CPU and memory, for the tray tooltip and alerts. The mini overlay needs the
+//! system numbers but not the process table.
 
 use std::collections::HashSet;
 use std::path::PathBuf;
@@ -26,12 +27,22 @@ const STORAGE_INTERVAL: Duration = Duration::from_secs(5);
 const TEMPERATURE_INTERVAL: Duration = Duration::from_secs(15);
 
 static UI_VISIBLE: AtomicBool = AtomicBool::new(true);
+static OVERLAY_VISIBLE: AtomicBool = AtomicBool::new(false);
 static SAMPLER: OnceLock<thread::Thread> = OnceLock::new();
 static TEMPS: RwLock<Temps> = RwLock::new(Temps { list: Vec::new(), plausible: false });
 
 /// Tells the sampler whether the window can be seen. Showing it wakes the sampler at once.
 pub fn set_ui_visible(visible: bool) {
-    let was = UI_VISIBLE.swap(visible, Ordering::SeqCst);
+    wake_if_shown(&UI_VISIBLE, visible);
+}
+
+/// Same for the mini overlay.
+pub fn set_overlay_visible(visible: bool) {
+    wake_if_shown(&OVERLAY_VISIBLE, visible);
+}
+
+fn wake_if_shown(flag: &AtomicBool, visible: bool) {
+    let was = flag.swap(visible, Ordering::SeqCst);
     if visible
         && !was
         && let Some(sampler) = SAMPLER.get()
@@ -184,18 +195,22 @@ pub fn start_sampler(app: AppHandle, shared: SharedSnapshot) {
             thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
 
             loop {
-                if !UI_VISIBLE.load(Ordering::SeqCst) {
-                    // Hidden in the tray: just enough for the tooltip.
+                let window_shown = UI_VISIBLE.load(Ordering::SeqCst);
+                if !window_shown && !OVERLAY_VISIBLE.load(Ordering::SeqCst) {
+                    // Hidden in the tray: just enough for the tooltip and alerts.
                     sys.refresh_cpu_specifics(CpuRefreshKind::nothing().with_cpu_usage());
                     sys.refresh_memory();
                     crate::tray::update_tooltip(&app, sys.global_cpu_usage(), mem_percent(&sys), tray_temperature());
+                    crate::alerts::check(&app, sys.global_cpu_usage(), mem_percent(&sys), tray_temperature());
                     thread::park_timeout(HIDDEN_INTERVAL);
                     continue;
                 }
 
                 sys.refresh_cpu_all();
                 sys.refresh_memory();
-                sys.refresh_processes_specifics(ProcessesToUpdate::All, true, process_kind);
+                if window_shown {
+                    sys.refresh_processes_specifics(ProcessesToUpdate::All, true, process_kind);
+                }
 
                 // Each rate uses the time between its own refreshes, so slow work elsewhere can't skew it.
                 networks.refresh(true);
@@ -229,7 +244,8 @@ pub fn start_sampler(app: AppHandle, shared: SharedSnapshot) {
                 }
 
                 let core_count = sys.cpus().len().max(1);
-                let procs = processes::collect(&sys, core_count, &mut protection);
+                // Only the main window shows processes; the overlay alone keeps the last list.
+                let procs = window_shown.then(|| processes::collect(&sys, core_count, &mut protection));
                 let per_sec = |bytes: u64, secs: f64| (bytes as f64 / secs) as u64;
 
                 let metrics = Metrics {
@@ -258,16 +274,19 @@ pub fn start_sampler(app: AppHandle, shared: SharedSnapshot) {
                         })
                         .collect(),
                     temps: TEMPS.read().list.clone(),
-                    process_count: procs.len(),
+                    process_count: procs.as_ref().map_or_else(|| shared.read().processes.len(), Vec::len),
                     uptime_secs: System::uptime(),
                 };
 
                 crate::tray::update_tooltip(&app, metrics.cpu_total, mem_percent(&sys), tray_temperature());
+                crate::alerts::check(&app, metrics.cpu_total, mem_percent(&sys), tray_temperature());
                 let _ = app.emit(METRICS_EVENT, &metrics);
                 {
                     let mut snap = shared.write();
                     snap.metrics = metrics;
-                    snap.processes = procs;
+                    if let Some(procs) = procs {
+                        snap.processes = procs;
+                    }
                 }
 
                 thread::park_timeout(SAMPLE_INTERVAL);

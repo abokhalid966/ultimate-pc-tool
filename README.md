@@ -1,10 +1,10 @@
 # Optimo
 
-An all-in-one Windows utility: live system monitor, process manager, saved commands, a built-in terminal and a startup apps manager, all reachable from one Ctrl+K command palette.
+An all-in-one Windows utility: live system monitor, PC health check, cleanup and disk space finder, apps, services and startup managers, scheduled automations, alerts and a mini overlay, all reachable from one Ctrl+K command palette.
 
 Built with [Tauri 2](https://tauri.app) (Rust) and React + TypeScript. The installer is around 10 MB and the app idles at low memory.
 
-## Features (v0.1)
+## Features (v0.3)
 
 | Area | What it does |
 |---|---|
@@ -15,17 +15,24 @@ Built with [Tauri 2](https://tauri.app) (Rust) and React + TypeScript. The insta
 | **Terminal** | Real PowerShell, Command Prompt and WSL tabs inside the app |
 | **Startup apps** | Turn apps on or off at Windows startup, using the same mechanism as Task Manager |
 | **Apps** | Every installed app with its size and install date, and an Uninstall button that runs the app's own uninstaller; app updates through winget (one at a time or all at once, with live progress); and a Fresh-install toolkit to install popular apps in one go |
-| **Activity** | A log of every change the app made, with undo for startup changes, priority changes and deleted commands |
+| **Services** | Every Windows service with a plain-language explanation, start, stop and restart, and change how it starts (with undo) |
+| **Storage** | Safe cleanup of temp files, caches, browser caches, the Recycle Bin and Windows Update leftovers; and a Space finder that scans a drive or folder and shows a map of the biggest folders and largest files, with Move to Recycle Bin and undo |
+| **Automations** | Routine jobs on a schedule: clean temporary files weekly, clear browser caches, check for app updates daily, run the speed check, or any of your saved commands, when Optimo starts, daily, weekly or every few hours. Missed runs catch up the next time the app is open |
+| **Alerts** | Windows notifications when the processor or memory stays maxed out, the PC runs hot, or a drive is almost full (limits in Settings) |
+| **Mini overlay** | A small always-on-top box with CPU, memory, network and temperature. Drag it anywhere; toggle it from Settings, the tray or Ctrl+K |
+| **Start with Windows** | Optional: opens quietly in the tray at sign-in so alerts and automations keep working |
+| **Activity** | A log of every change the app made, with undo for startup changes, priority changes, service changes, power plans, deleted commands and files moved to the Recycle Bin. Automation runs are logged here too |
 | **Command palette** | Ctrl+K anywhere: jump to a page, run a saved command, `kill chrome`, or `>` followed by any command to run it in the terminal |
 | **Tray** | Closing the window can keep the app in the tray (it asks the first time), with CPU/RAM in the tooltip |
-| **Settings** | Light, dark or follow-Windows theme, what the close button does, keyboard shortcuts and version info |
+| **Settings** | Theme, close button, start with Windows, mini overlay, alert limits, keyboard shortcuts and version info |
 
 ## Download and install
 
 1. Open the [latest release](https://github.com/abokhalid966/ultimate-pc-tool/releases/latest).
 2. Under **Assets**, download the file ending in `_x64-setup.exe`.
 3. Run it. The app is not code-signed yet, so Windows SmartScreen shows "Windows protected your PC": click **More info**, then **Run anyway**.
-4. The installer adds Optimo to the Start menu. Some actions (all-users startup apps, services, Windows temp cleanup) need **Restart as administrator** from the sidebar.
+4. Updating from an older version: just run the new installer. If you had the old "Ultimate PC Tool", uninstall it first in Windows **Settings > Apps > Installed apps** (your saved commands and settings are kept).
+5. The installer adds Optimo to the Start menu. Some actions (all-users startup apps, services, Windows temp cleanup) need **Restart as administrator** from the sidebar.
 
 Every push to `main` also builds the installer on GitHub Actions (download `optimo-windows` from the run's artifacts), and each push to `main` publishes the release for the version in `src-tauri/tauri.conf.json`.
 
@@ -68,4 +75,4 @@ User data (saved commands, activity log) is stored as JSON in `%APPDATA%\com.abo
 
 ## Roadmap
 
-See the project plan. Next up: "Why is my PC slow?" diagnosis, services manager, installed apps via winget, cleanup and disk usage map, GPU stats and alerts.
+See the project plan. Next up: GPU stats, network tools, a system information page, and code signing with auto-update.

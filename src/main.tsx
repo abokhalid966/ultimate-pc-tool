@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
+import { Overlay } from "./Overlay";
 import { applyTheme, getThemePref } from "./theme";
 import "@xterm/xterm/css/xterm.css";
 import "./styles.css";
@@ -11,6 +12,6 @@ if (theme !== "system") applyTheme(theme);
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <App />
+    {window.location.hash === "#overlay" ? <Overlay /> : <App />}
   </React.StrictMode>,
 );

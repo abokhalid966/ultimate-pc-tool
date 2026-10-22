@@ -65,18 +65,19 @@ pub struct UpgradeList {
 
 #[tauri::command]
 pub async fn winget_list_upgrades() -> Result<UpgradeList, String> {
-    crate::blocking(|| {
-        let Some(exe) = winget_exe() else {
-            return Ok(UpgradeList { winget_missing: true, upgrades: Vec::new() });
-        };
-        let (output, code) = capture(exe, &["upgrade", "--accept-source-agreements", "--disable-interactivity"])?;
-        let upgrades = table::parse_upgrades(&output);
-        if upgrades.is_empty() {
-            empty_or_error(&output, code, "for app updates")?;
-        }
-        Ok(UpgradeList { winget_missing: false, upgrades })
-    })
-    .await
+    crate::blocking(list_upgrades).await
+}
+
+pub fn list_upgrades() -> Result<UpgradeList, String> {
+    let Some(exe) = winget_exe() else {
+        return Ok(UpgradeList { winget_missing: true, upgrades: Vec::new() });
+    };
+    let (output, code) = capture(exe, &["upgrade", "--accept-source-agreements", "--disable-interactivity"])?;
+    let upgrades = table::parse_upgrades(&output);
+    if upgrades.is_empty() {
+        empty_or_error(&output, code, "for app updates")?;
+    }
+    Ok(UpgradeList { winget_missing: false, upgrades })
 }
 
 #[derive(Serialize)]

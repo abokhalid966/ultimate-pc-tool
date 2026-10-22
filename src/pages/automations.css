@@ -1,0 +1,46 @@
+/* Automations page. Rows reuse .fix-row from styles.css. */
+
+.auto-row.off .cmd-icon,
+.auto-row.off .fix-name strong {
+  opacity: 0.7;
+}
+.auto-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.auto-status > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.auto-status svg {
+  flex-shrink: 0;
+  color: var(--ok);
+}
+.auto-status .bad,
+.auto-status .bad svg {
+  color: var(--danger);
+}
+.auto-kinds {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.auto-kinds > div {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px 16px;
+  margin-top: 4px;
+}
+.auto-kinds .check {
+  align-items: center;
+}
+.auto-kinds .check input {
+  margin: 0;
+}
