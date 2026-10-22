@@ -125,6 +125,85 @@ window.__TAURI_INTERNALS__ = (() => {
   ];
   const settings = { closeAction: null };
 
+  // ---- Apps (installed programs, winget) ----
+  // `window.__MOCK_NO_WINGET__ = true` (set before load) pretends winget isn't installed.
+  const MB = 1024 ** 2;
+  const program = (name, publisher, version, sizeMb, installDate, extra = {}) => ({
+    id: `${extra.scope === "user" ? "HKCU" : "HKLM64"}\\${name}`,
+    name,
+    publisher,
+    version,
+    sizeBytes: sizeMb ? Math.round(sizeMb * MB) : null,
+    installDate,
+    location: `C:\\Program Files\\${name.split(" (")[0]}`,
+    scope: "machine",
+    canUninstall: true,
+    canQuiet: false,
+    isSelf: false,
+    ...extra,
+  });
+  const appData = (p) => `C:\\Users\\abokhalid\\AppData\\${p}`;
+  let programs = [
+    program("Google Chrome", "Google LLC", "120.0.6099.130", 512, "2024-01-12"),
+    program("Mozilla Firefox (x64 en-US)", "Mozilla", "121.0", 236, "2023-12-19", { canQuiet: true }),
+    program("7-Zip 23.01 (x64)", "Igor Pavlov", "23.01", 5.6, "2023-09-02", { canQuiet: true }),
+    program("Discord", "Discord Inc.", "1.0.9013", 87, "2024-02-03", { scope: "user", location: appData("Local\\Discord") }),
+    program("Spotify", "Spotify AB", "1.2.26.1187", 302, "2024-01-28", { scope: "user", location: appData("Roaming\\Spotify"), handsOver: true }),
+    program("Microsoft Visual Studio Code (User)", "Microsoft Corporation", "1.85.1", 362, "2023-12-14", { scope: "user", location: appData("Local\\Programs\\Microsoft VS Code") }),
+    program("Microsoft Edge", "Microsoft Corporation", "120.0.2210.91", 742, "2024-01-15", { canUninstall: false }),
+    program("Microsoft 365 Apps for enterprise - en-us", "Microsoft Corporation", "16.0.17126.20132", 2480, "2023-11-03"),
+    program("NVIDIA Graphics Driver 546.33", "NVIDIA Corporation", "546.33", 1130, "2023-12-12"),
+    program("Notepad++ (64-bit x64)", "Notepad++ Team", "8.6", 14.5, "2023-11-26", { canQuiet: true }),
+    program("Python 3.12.1 (64-bit)", "Python Software Foundation", "3.12.1", 103, "2023-12-08", { scope: "user", canQuiet: true }),
+    program("Git", "The Git Development Community", "2.43.0", 334, "2023-11-21", { canQuiet: true }),
+    program("VLC media player", "VideoLAN", "3.0.20", 168, "2023-11-02", { canQuiet: true }),
+    program("Zoom Workplace", "Zoom Video Communications, Inc.", "5.17.5", 310, "2024-01-30", { scope: "user", location: appData("Roaming\\Zoom") }),
+    program("Steam", "Valve Corporation", "2.10.91.91", null, "2023-08-14", { location: "C:\\Program Files (x86)\\Steam" }),
+    program("Epic Games Launcher", "Epic Games, Inc.", "1.3.93.0", 245, "2023-10-07", { canQuiet: true }),
+    program("Adobe Acrobat (64-bit)", "Adobe", "23.008.20470", 1310, "2024-01-09", { canQuiet: true }),
+    program("Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.38.33130", "Microsoft Corporation", "14.38.33130.0", 20.4, "2024-01-04", { location: null }),
+    program("Realtek High Definition Audio Driver", "Realtek Semiconductor Corp.", "6.0.9549.1", null, null, { location: null }),
+    program("Logitech G HUB", "Logitech", "2024.1.536011", 610, "2024-02-01", { userCancels: true }),
+    program("OBS Studio", "OBS Project", "30.0.2", 432, "2023-12-29"),
+    program("WinRAR 6.24 (64-bit)", "win.rar GmbH", "6.24.0", 9.7, "2023-10-30"),
+    program("Docker Desktop", "Docker Inc.", "4.26.1", 2650, "2023-12-20"),
+    program("Microsoft OneDrive", "Microsoft Corporation", "23.246.1127.0002", 310, "2024-01-18", { scope: "user", location: appData("Local\\Microsoft\\OneDrive") }),
+    program("Bitwarden", "Bitwarden Inc.", "2024.1.0", 410, "2024-01-22", { scope: "user", location: appData("Local\\Programs\\Bitwarden") }),
+    program("PowerToys (Preview) x64", "Microsoft Corporation", "0.77.0", 820, "2024-01-10", { canQuiet: true }),
+    program("Ultimate PC Tool", "abokhalid", "0.1.0", 12, "2024-02-05", { scope: "user", isSelf: true, canUninstall: false, location: appData("Local\\Ultimate PC Tool") }),
+  ];
+  const wingetUpgrades = [
+    { name: "Google Chrome", id: "Google.Chrome", partialId: false, version: "120.0.6099.130", available: "121.0.6167.86", source: "winget", explicit: false },
+    { name: "Mozilla Firefox (x64 en-US)", id: "Mozilla.Firefox", partialId: false, version: "121.0", available: "122.0.1", source: "winget", explicit: false },
+    { name: "7-Zip 23.01 (x64)", id: "7zip.7zip", partialId: false, version: "23.01", available: "24.01", source: "winget", explicit: false },
+    { name: "Discord", id: "Discord.Discord", partialId: false, version: "1.0.9013", available: "1.0.9030", source: "winget", explicit: false },
+    { name: "Zoom Workplace", id: "Zoom.Zoom", partialId: false, version: "5.17.5.31030", available: "6.0.2.33403", source: "winget", explicit: false },
+    { name: "Microsoft Visual C++ 2015-2022 Redistributable (x64)…", id: "Microsoft.VCRedist.2015+.", partialId: true, version: "14.38.33130.0", available: "14.38.33135.0", source: "winget", explicit: false },
+    { name: "Notepad++ (64-bit x64)", id: "Notepad++.Notepad++", partialId: false, version: "8.6", available: "8.6.2", source: "winget", explicit: true },
+  ];
+  const upgraded = new Set();
+  const wingetPackages = ["Google.Chrome", "Mozilla.Firefox", "7zip.7zip", "Discord.Discord", "Spotify.Spotify", "Valve.Steam", "VideoLAN.VLC", "Git.Git", "Notepad++.Notepad++", "Zoom.Zoom", "OBSProject.OBSStudio", "Bitwarden.Bitwarden", "Microsoft.PowerToys", "EpicGames.EpicGamesLauncher"].map((id) => ({ name: id.split(".").pop(), id, partialId: false }));
+  wingetPackages.push({ name: "Microsoft Visual Studio Code", id: "Microsoft.VisualStudioC", partialId: true });
+  // Uninstalling also takes the app off what winget reports.
+  function dropProgram(p) {
+    programs = programs.filter((x) => x !== p);
+    const name = p.name.toLowerCase();
+    const words = name.split(/[^a-z0-9+]+/);
+    for (let i = wingetPackages.length - 1; i >= 0; i--) if (words.includes(wingetPackages[i].name.toLowerCase())) wingetPackages.splice(i, 1);
+    for (const u of wingetUpgrades) if (name === u.name.toLowerCase()) upgraded.add(u.id);
+  }
+  /** Installs that fail in the mock, to show the failure summary. */
+  const WINGET_FAILS = { "Zoom.Zoom": ["0x8A150101", "The app is open. Close it, then try again."], "Proton.ProtonVPN": ["0x8A150108", "The app's installer ran into a problem. Its publisher may be able to help."] };
+  const cleanWinget = (text) =>
+    text
+      .split("\n")
+      .map((l) => l.split("\r").filter(Boolean).pop() ?? "")
+      .filter((l) => !/^[\s\\|/-]*$/.test(l) || l === "")
+      .filter((l) => !/[█▒]/.test(l))
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+
   const handlers = {
     get_app_info: () => ({ elevated: !!window.__MOCK_ELEVATED__, version: "0.1.0" }),
     restart_as_admin: () => fail("You chose No on the administrator prompt, so the app keeps running as before."),
@@ -283,6 +362,89 @@ window.__TAURI_INTERNALS__ = (() => {
     clear_activity: () => {
       activity = [];
     },
+
+    list_installed_apps: async () => {
+      await sleep(250);
+      return programs.map(({ handsOver, userCancels, ...p }) => p);
+    },
+    uninstall_app: async ({ id, quiet }) => {
+      const p = programs.find((x) => x.id === id);
+      const outcome = { removed: false, pending: false, cancelled: false, restartNeeded: false, message: null };
+      if (!p) return { ...outcome, removed: true };
+      if (p.isSelf) fail("To remove Ultimate PC Tool, use Settings > Apps > Installed apps in Windows.");
+      await sleep(quiet ? 1400 : 2400);
+      if (p.userCancels) return { ...outcome, cancelled: true };
+      const detail = `Version ${p.version} · "${p.location ?? "C:\\Program Files\\App"}\\uninstall.exe"${quiet ? " /S" : ""}`;
+      if (p.handsOver) {
+        // Like NSIS uninstallers: the first process exits and a copy finishes the job a bit later.
+        setTimeout(() => dropProgram(p), 6000);
+        record("Apps", `Opened the uninstaller for "${p.name}"`, detail);
+        return { ...outcome, pending: true };
+      }
+      dropProgram(p);
+      record("Apps", `Uninstalled "${p.name}"`, detail);
+      return { ...outcome, removed: true };
+    },
+    app_still_installed: ({ id }) => programs.some((x) => x.id === id),
+    open_app_folder: () => null,
+    winget_list_upgrades: async () => {
+      await sleep(1800);
+      if (window.__MOCK_NO_WINGET__) return { wingetMissing: true, upgrades: [] };
+      return { wingetMissing: false, upgrades: wingetUpgrades.filter((u) => !upgraded.has(u.id)) };
+    },
+    winget_list_installed: async () => {
+      await sleep(1400);
+      if (window.__MOCK_NO_WINGET__) return { wingetMissing: true, packages: [] };
+      return { wingetMissing: false, packages: wingetPackages };
+    },
+    winget_run: async ({ runId, action, pkg, onEvent }) => {
+      calls.push({ cmd: "winget_run", action, pkg });
+      if (window.__MOCK_NO_WINGET__) fail("Windows Package Manager (winget) isn't installed. Get the free App Installer from the Microsoft Store, then try again.");
+      let log = "";
+      const write = (data) => {
+        log += data;
+        send(onEvent, { type: "output", stderr: false, data });
+      };
+      const args = `${action} --id ${pkg.id}${pkg.partialId ? "" : " --exact"} --accept-source-agreements --accept-package-agreements --disable-interactivity`;
+      const finish = (extra) => ({ ok: false, unchanged: false, restartNeeded: false, stopped: null, message: "", code: null, output: cleanWinget(log), ...extra });
+      const wasStopped = () => cancelled.delete(runId);
+      const stopped = () => finish({ stopped: "cancelled", message: "Stopped before it finished." });
+      for (const frame of ["\r   - ", "\r   \\ ", "\r   | ", "\r   / ", "\r          \r"]) {
+        write(frame);
+        await sleep(110);
+      }
+      write(`Found ${pkg.name} [${pkg.id}] Version ${pkg.version ?? "latest"}\r\nThis application is licensed to you by its owner.\r\nMicrosoft is not responsible for, nor does it grant any licenses to, third-party packages.\r\n`);
+      write(`Downloading https://downloads.example.com/${pkg.id.toLowerCase()}/setup.exe\r\n`);
+      const total = 30 + ((pkg.id.length * 37) % 150);
+      for (let i = 1; i <= 24; i++) {
+        if (wasStopped()) return stopped();
+        const bar = "█".repeat(Math.round((i / 24) * 30)).padEnd(30, "▒");
+        write(`\r  ${bar}  ${((total * i) / 24).toFixed(1)} MB / ${total.toFixed(1)} MB`);
+        await sleep(120);
+      }
+      write("\r\nSuccessfully verified installer hash\r\nStarting package install...\r\n");
+      for (let i = 0; i < 12; i++) {
+        if (wasStopped()) return stopped();
+        write(`\r   ${"-\\|/"[i % 4]} `);
+        await sleep(120);
+      }
+      write("\r          \r");
+      const failure = WINGET_FAILS[pkg.id];
+      if (failure) {
+        write(`Installer failed with exit code: ${failure[0]}\r\n`);
+        return finish({ code: failure[0], message: failure[1] });
+      }
+      write("Successfully installed\r\n");
+      if (action === "install") {
+        wingetPackages.push({ name: pkg.name, id: pkg.id, partialId: false });
+        record("Apps", `Installed "${pkg.name}"`, `winget ${args}`);
+      } else {
+        upgraded.add(pkg.id);
+        record("Apps", `Updated "${pkg.name}"${pkg.version ? ` to version ${pkg.version}` : ""}`, `winget ${args}`);
+      }
+      return finish({ ok: true, code: "0", message: action === "install" ? "Installed." : "Updated." });
+    },
+    open_app_installer_page: () => null,
 
     "plugin:window|set_theme": () => null,
     "plugin:event|listen": (a) => {

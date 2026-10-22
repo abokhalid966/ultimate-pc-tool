@@ -1,4 +1,5 @@
 mod actions;
+mod apps;
 mod cleanup;
 mod commands;
 mod metrics;
@@ -9,6 +10,7 @@ mod startup;
 mod store;
 mod terminal;
 mod tray;
+mod winget;
 
 use std::sync::Arc;
 
@@ -400,6 +402,14 @@ pub fn run() {
             list_activity,
             undo_activity,
             clear_activity,
+            apps::list_installed_apps,
+            apps::uninstall_app,
+            apps::app_still_installed,
+            apps::open_app_folder,
+            winget::winget_list_upgrades,
+            winget::winget_list_installed,
+            winget::winget_run,
+            winget::open_app_installer_page,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

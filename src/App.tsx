@@ -14,6 +14,7 @@ import { REFRESH_EVENT } from "./hooks/useRefresh";
 import { RunsProvider } from "./hooks/useRuns";
 import { PAGES, PageId, SECTIONS } from "./pages";
 import { Activity } from "./pages/Activity";
+import { Apps } from "./pages/Apps";
 import { Commands, PendingRun } from "./pages/Commands";
 import { Dashboard } from "./pages/Dashboard";
 import { ProcessSortKey, Processes } from "./pages/Processes";
@@ -63,8 +64,8 @@ function AppShell() {
         setPaletteOpen((open) => !open);
         return;
       }
-      // Ctrl+1..7 jump to the pages in sidebar order.
-      if (e.ctrlKey && !e.shiftKey && !e.altKey && /^[1-7]$/.test(e.key)) {
+      // Ctrl+1..9 jump to the pages in sidebar order.
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && /^[1-9]$/.test(e.key)) {
         const target = PAGES[Number(e.key) - 1];
         if (target) {
           e.preventDefault();
@@ -233,6 +234,7 @@ function AppShell() {
             />
           </div>
           {page === "startup" && <Startup elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} />}
+          {page === "apps" && <Apps elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} />}
           {page === "activity" && <Activity elevated={appInfo.elevated} />}
           {page === "settings" && <Settings appInfo={appInfo} onRestartAsAdmin={restartAsAdmin} />}
         </main>

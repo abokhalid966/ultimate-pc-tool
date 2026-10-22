@@ -236,3 +236,93 @@ export function errorText(e: unknown): string {
 
 /** Startup sources that apply to all users and need administrator rights to change. */
 export const ADMIN_SOURCES: StartupSource[] = ["machineRun", "machineRun32", "machineFolder"];
+
+// ---- Apps (installed programs, winget updates and installs) ----
+
+export type AppScope = "machine" | "user";
+
+export interface InstalledApp {
+  /** Where the entry lives, e.g. `HKLM64\{GUID}`; uninstalling looks the command up again from it. */
+  id: string;
+  name: string;
+  publisher: string | null;
+  version: string | null;
+  /** The installer's own estimate. */
+  sizeBytes: number | null;
+  /** YYYY-MM-DD */
+  installDate: string | null;
+  location: string | null;
+  /** "machine" apps are installed for everyone, so removing them needs administrator rights. */
+  scope: AppScope;
+  canUninstall: boolean;
+  canQuiet: boolean;
+  /** Ultimate PC Tool itself. */
+  isSelf: boolean;
+}
+
+export interface UninstallOutcome {
+  removed: boolean;
+  /** The uninstaller may still be open (it handed over to another window). */
+  pending: boolean;
+  cancelled: boolean;
+  restartNeeded: boolean;
+  message: string | null;
+}
+
+export interface AppUpgrade {
+  name: string;
+  id: string;
+  /** winget shortened the id in its table; it is matched as a prefix. */
+  partialId: boolean;
+  version: string;
+  available: string;
+  source: string | null;
+  /** Pinned or update-only-when-asked: "Update all" leaves it out. */
+  explicit: boolean;
+}
+
+export interface UpgradeList {
+  wingetMissing: boolean;
+  upgrades: AppUpgrade[];
+}
+
+export interface WingetInstalled {
+  wingetMissing: boolean;
+  packages: { name: string; id: string; partialId: boolean }[];
+}
+
+export type WingetAction = "install" | "upgrade";
+
+export interface WingetPackage {
+  id: string;
+  name: string;
+  source?: string | null;
+  partialId?: boolean;
+  /** The version being installed, for the activity log. */
+  version?: string | null;
+}
+
+export interface WingetOutcome {
+  ok: boolean;
+  /** Already installed or already up to date. */
+  unchanged: boolean;
+  restartNeeded: boolean;
+  stopped: StopReason | null;
+  message: string;
+  code: string | null;
+  /** winget's output without spinners and progress bars. */
+  output: string;
+}
+
+export const appsApi = {
+  installed: () => invoke<InstalledApp[]>("list_installed_apps"),
+  uninstall: (id: string, quiet: boolean) => invoke<UninstallOutcome>("uninstall_app", { id, quiet }),
+  stillInstalled: (id: string) => invoke<boolean>("app_still_installed", { id }),
+  openFolder: (path: string) => invoke<void>("open_app_folder", { path }),
+  upgrades: () => invoke<UpgradeList>("winget_list_upgrades"),
+  wingetInstalled: () => invoke<WingetInstalled>("winget_list_installed"),
+  /** Output arrives on `onEvent`; stop a run with `api.cancelCommand(runId)`. */
+  wingetRun: (runId: string, action: WingetAction, pkg: WingetPackage, onEvent: Channel<RunEvent>) =>
+    invoke<WingetOutcome>("winget_run", { runId, action, pkg, onEvent }),
+  openAppInstaller: () => invoke<void>("open_app_installer_page"),
+};
