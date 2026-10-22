@@ -20,11 +20,14 @@ Built with [Tauri 2](https://tauri.app) (Rust) and React + TypeScript. The insta
 | **Tray** | Closing the window can keep the app in the tray (it asks the first time), with CPU/RAM in the tooltip |
 | **Settings** | Light, dark or follow-Windows theme, what the close button does, keyboard shortcuts and version info |
 
-## Download
+## Download and install
 
-Every push to `main` builds a Windows installer on GitHub Actions. Open the **Actions** tab, pick the latest successful **Build Windows installer** run, and download `ultimate-pc-tool-windows` from its artifacts. Pushing a tag like `v0.1.0` also creates a draft GitHub release with the installer attached.
+1. Open the [latest release](https://github.com/abokhalid966/ultimate-pc-tool/releases/latest).
+2. Under **Assets**, download the file ending in `_x64-setup.exe`.
+3. Run it. The app is not code-signed yet, so Windows SmartScreen shows "Windows protected your PC": click **More info**, then **Run anyway**.
+4. The installer adds Ultimate PC Tool to the Start menu. Some actions (all-users startup apps, services, Windows temp cleanup) need **Restart as administrator** from the sidebar.
 
-The app is not code-signed yet, so Windows SmartScreen will show a warning on first run ("More info" then "Run anyway").
+Every push to `main` also builds the installer on GitHub Actions (download `ultimate-pc-tool-windows` from the run's artifacts), and pushing a tag like `v0.2.0` publishes a release.
 
 ## Develop
 

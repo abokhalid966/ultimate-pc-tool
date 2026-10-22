@@ -43,7 +43,7 @@ jobs:
         with:
           tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
           releaseName: "Ultimate PC Tool ${{ github.ref_name }}"
-          releaseDraft: true
+          releaseDraft: false
 
       - uses: actions/upload-artifact@v4
         with:
