@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { Brush, CircleX, Gauge, HeartPulse, History, LayoutGrid, LucideIcon, Power, RefreshCw, Trash2, Undo2, Zap } from "lucide-react";
+import { Brush, CircleX, Gauge, HeartPulse, History, LayoutGrid, LucideIcon, Power, RefreshCw, ServerCog, Trash2, Undo2, Zap } from "lucide-react";
 import { ActionRecord, ADMIN_SOURCES, api, errorText, Undo } from "../api";
 import { useConfirm } from "../components/Confirm";
 import { EmptyState, ErrorState } from "../components/EmptyState";
@@ -11,8 +11,8 @@ import { dayLabel, relativeTime } from "../format";
 import { useAsync } from "../hooks/useAsync";
 import { useOnRefresh } from "../hooks/useRefresh";
 
-/** Undoing an all-users startup change needs administrator rights. */
-const needsAdmin = (undo: Undo) => undo.type === "startupToggle" && ADMIN_SOURCES.includes(undo.source);
+/** Undoing an all-users startup change or a service change needs administrator rights. */
+const needsAdmin = (undo: Undo) => (undo.type === "startupToggle" && ADMIN_SOURCES.includes(undo.source)) || undo.type === "serviceStartup";
 
 const LOOKS: Record<string, { icon: LucideIcon; color: string }> = {
   startup: { icon: Power, color: "var(--cat-system)" },
@@ -21,6 +21,7 @@ const LOOKS: Record<string, { icon: LucideIcon; color: string }> = {
   cleanup: { icon: Brush, color: "var(--cat-cleanup)" },
   "pc health": { icon: HeartPulse, color: "var(--cat-repair)" },
   apps: { icon: LayoutGrid, color: "var(--cat-apps)" },
+  services: { icon: ServerCog, color: "var(--cat-network)" },
 };
 const lookFor = (category: string) => LOOKS[category.toLowerCase()] ?? { icon: Gauge, color: "var(--text-2)" };
 

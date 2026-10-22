@@ -6,6 +6,7 @@ mod health;
 mod metrics;
 mod os;
 mod processes;
+mod services;
 mod settings;
 mod startup;
 mod store;
@@ -400,6 +401,11 @@ pub fn run() {
             terminal_close,
             list_startup_items,
             set_startup_enabled,
+            services::list_services,
+            services::get_service,
+            services::get_service_details,
+            services::control_service,
+            services::set_service_startup,
             list_activity,
             undo_activity,
             clear_activity,

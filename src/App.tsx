@@ -19,6 +19,7 @@ import { Commands, PendingRun } from "./pages/Commands";
 import { Dashboard } from "./pages/Dashboard";
 import { Health } from "./pages/Health";
 import { ProcessSortKey, Processes } from "./pages/Processes";
+import { Services } from "./pages/Services";
 import { Settings } from "./pages/Settings";
 import { Startup } from "./pages/Startup";
 import { ShellKind, Terminal, TerminalRequest } from "./pages/Terminal";
@@ -237,6 +238,7 @@ function AppShell() {
           </div>
           {page === "startup" && <Startup elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} />}
           {page === "apps" && <Apps elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} />}
+          {page === "services" && <Services elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} />}
           {page === "activity" && <Activity elevated={appInfo.elevated} />}
           {page === "settings" && <Settings appInfo={appInfo} onRestartAsAdmin={restartAsAdmin} />}
         </main>

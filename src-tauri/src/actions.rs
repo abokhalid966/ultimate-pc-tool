@@ -6,6 +6,7 @@ use tauri::{AppHandle, Manager};
 
 use crate::commands::{CommandLibrary, SavedCommand};
 use crate::processes::{self, Priority, Target};
+use crate::services::{self, StartupType};
 use crate::startup::{self, StartupSource};
 use crate::store;
 
@@ -24,6 +25,9 @@ pub enum Undo {
     /// Switch back to the power plan that was active before (PC health).
     #[serde(rename_all = "camelCase")]
     PowerPlan { guid: String, name: String },
+    /// Puts a service's startup type back to `startup`.
+    #[serde(rename_all = "camelCase")]
+    ServiceStartup { name: String, display_name: String, startup: StartupType },
     /// An entry written by a newer version; kept, but it can't be undone here.
     #[serde(other)]
     Unknown,
@@ -103,6 +107,7 @@ impl ActivityLog {
                 app.state::<CommandLibrary>().upsert(app, command.clone())?;
             }
             Undo::PowerPlan { guid, .. } => crate::health::set_active_power_plan(guid)?,
+            Undo::ServiceStartup { name, startup, .. } => services::restore_startup(name, *startup)?,
             Undo::Unknown => return Err("This action can't be undone".into()),
         }
         self.with(app, |list| {
@@ -133,6 +138,13 @@ mod tests {
         let list: Vec<ActionRecord> = serde_json::from_str(json).unwrap();
         assert!(matches!(list[0].undo, Some(Undo::Unknown)));
         assert_eq!(list[1].detail, None);
+    }
+
+    #[test]
+    fn reads_service_startup_undo() {
+        let json = r#"{"type":"serviceStartup","name":"Spooler","displayName":"Print Spooler","startup":"automaticDelayed"}"#;
+        let undo = serde_json::from_str::<Undo>(json).unwrap();
+        assert!(matches!(undo, Undo::ServiceStartup { startup: StartupType::AutomaticDelayed, .. }));
     }
 
     #[test]
