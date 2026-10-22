@@ -25,6 +25,17 @@ pub struct StartupItem {
     pub needs_admin: bool,
 }
 
+/// Removes the quotes around a command only when the whole value is one quoted path, so
+/// `"C:\App\app.exe" -silent` keeps its quotes intact.
+#[cfg_attr(not(windows), allow(dead_code))]
+fn clean_command(raw: &str) -> String {
+    let t = raw.trim();
+    match t.strip_prefix('"').and_then(|rest| rest.strip_suffix('"')) {
+        Some(inner) if !inner.contains('"') => inner.to_string(),
+        _ => t.to_string(),
+    }
+}
+
 #[cfg(windows)]
 mod imp {
     use std::path::PathBuf;
@@ -99,7 +110,7 @@ mod imp {
                 key.enum_values()
                     .filter_map(Result::ok)
                     .filter(|(name, _)| !name.is_empty())
-                    .map(|(name, value)| (name, value.to_string().trim_matches('"').to_string()))
+                    .map(|(name, value)| (name, super::clean_command(&value.to_string())))
                     .collect()
             }
             StartupSource::UserFolder | StartupSource::MachineFolder => {
@@ -161,7 +172,7 @@ mod imp {
 
     fn access_error(source: StartupSource, e: std::io::Error) -> String {
         if source.needs_admin() && e.kind() == std::io::ErrorKind::PermissionDenied {
-            "This entry applies to all users. Run the app as administrator to change it.".into()
+            "This entry applies to all users, so it needs administrator rights. Use Restart as administrator to change it.".into()
         } else {
             e.to_string()
         }
@@ -182,3 +193,15 @@ mod imp {
 }
 
 pub use imp::{list, set_enabled};
+
+#[cfg(test)]
+mod tests {
+    use super::clean_command;
+
+    #[test]
+    fn strips_quotes_only_around_a_lone_path() {
+        assert_eq!(clean_command(r#""C:\Apps\a b\x.exe""#), r"C:\Apps\a b\x.exe");
+        assert_eq!(clean_command(r#""C:\Steam\steam.exe" -silent"#), r#""C:\Steam\steam.exe" -silent"#);
+        assert_eq!(clean_command("  app.exe /min "), "app.exe /min");
+    }
+}

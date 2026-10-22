@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { errorText } from "../api";
 
-/** Loads data once and exposes a `reload` for after mutations. */
+/** Loads data once and exposes a `reload` for after mutations; `loaded` turns true after the first attempt. */
 export function useAsync<T>(load: () => Promise<T>, initial: T) {
   const [data, setData] = useState<T>(initial);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -16,6 +17,7 @@ export function useAsync<T>(load: () => Promise<T>, initial: T) {
       setError(errorText(e));
     } finally {
       setLoading(false);
+      setLoaded(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -24,5 +26,5 @@ export function useAsync<T>(load: () => Promise<T>, initial: T) {
     reload();
   }, [reload]);
 
-  return { data, error, loading, reload };
+  return { data, setData, error, loading, loaded, reload };
 }

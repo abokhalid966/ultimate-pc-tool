@@ -1,10 +1,8 @@
-//! System tray icon with live stats in its tooltip; closing the window hides to tray.
+//! System tray icon with live stats in its tooltip; closing the window can hide it to the tray.
 
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager};
-
-use crate::metrics::Metrics;
 
 const TRAY_ID: &str = "main";
 
@@ -14,6 +12,14 @@ pub fn show_main_window(app: &AppHandle) {
         let _ = window.show();
         let _ = window.set_focus();
     }
+    crate::metrics::set_ui_visible(true);
+}
+
+pub fn hide_main_window(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.hide();
+    }
+    crate::metrics::set_ui_visible(false);
 }
 
 pub fn setup(app: &AppHandle) -> tauri::Result<()> {
@@ -45,12 +51,12 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
-pub fn update_tooltip(app: &AppHandle, m: &Metrics) {
+/// `temperature` is only passed once readings look real (see metrics).
+pub fn update_tooltip(app: &AppHandle, cpu: f32, mem_pct: f64, temperature: Option<f32>) {
     if let Some(tray) = app.tray_by_id(TRAY_ID) {
-        let mem_pct = if m.mem_total > 0 { m.mem_used as f64 / m.mem_total as f64 * 100.0 } else { 0.0 };
-        let mut text = format!("CPU {:.0}%  ·  RAM {:.0}%", m.cpu_total, mem_pct);
-        if let Some(hottest) = m.temps.iter().map(|t| t.celsius).reduce(f32::max) {
-            text.push_str(&format!("  ·  {hottest:.0}°C"));
+        let mut text = format!("CPU {cpu:.0}%  ·  RAM {mem_pct:.0}%");
+        if let Some(t) = temperature {
+            text.push_str(&format!("  ·  {t:.0}°C"));
         }
         let _ = tray.set_tooltip(Some(text));
     }
