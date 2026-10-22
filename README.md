@@ -9,6 +9,7 @@ Built with [Tauri 2](https://tauri.app) (Rust) and React + TypeScript. The insta
 | Area | What it does |
 |---|---|
 | **Dashboard** | A plain-language health check ("Your PC is running smoothly", or what needs attention with a one-click fix), live CPU and memory gauges, network and disk graphs, top apps, drive space and sensor temperatures |
+| **PC health** | "Why is my PC slow?": a five-second speed check that gives a 0-100 score and ranked, plain-language issues (apps hogging the processor or memory, full drives, too many startup apps, pending restarts and updates, temp files, Power saver, heat, a busy hard disk), each with a one-click fix and "Fix all safe items" |
 | **Processes** | Search, sort, group by app, end one or all instances, change priority, open file location |
 | **Quick fixes** | Library of one-click fixes (flush DNS, SFC, DISM, winget upgrades...) plus your own commands with `{variables}`, optionally run as administrator |
 | **Terminal** | Real PowerShell, Command Prompt and WSL tabs inside the app |
@@ -47,6 +48,7 @@ src/                 React UI
   api.ts             Typed wrappers around the Rust commands
 src-tauri/src/
   metrics.rs         1-second sampler for system stats and the process table
+  health.rs          PC health speed check, power plan switch, restart
   processes.rs       End process, priority, open location
   commands.rs        Saved command library and command runner
   terminal.rs        Pseudo-console terminal sessions

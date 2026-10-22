@@ -21,6 +21,9 @@ pub enum Undo {
     Priority { pid: u32, start_time: u64, name: String, previous: Priority },
     #[serde(rename_all = "camelCase")]
     RestoreCommand { command: SavedCommand },
+    /// Switch back to the power plan that was active before (PC health).
+    #[serde(rename_all = "camelCase")]
+    PowerPlan { guid: String, name: String },
     /// An entry written by a newer version; kept, but it can't be undone here.
     #[serde(other)]
     Unknown,
@@ -99,6 +102,7 @@ impl ActivityLog {
             Undo::RestoreCommand { command } => {
                 app.state::<CommandLibrary>().upsert(app, command.clone())?;
             }
+            Undo::PowerPlan { guid, .. } => crate::health::set_active_power_plan(guid)?,
             Undo::Unknown => return Err("This action can't be undone".into()),
         }
         self.with(app, |list| {

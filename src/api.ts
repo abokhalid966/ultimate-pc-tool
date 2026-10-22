@@ -152,6 +152,7 @@ export type Undo =
   | { type: "startupToggle"; source: StartupSource; name: string; enabled: boolean }
   | { type: "priority"; pid: number; startTime: number; name: string; previous: Priority }
   | { type: "restoreCommand"; command: SavedCommand }
+  | { type: "powerPlan"; guid: string; name: string }
   | { type: "unknown" };
 
 export interface ActionRecord {
@@ -164,6 +165,56 @@ export interface ActionRecord {
   undo: Undo | null;
   undone: boolean;
 }
+
+// ---- PC health ----
+
+export type HealthSeverity = "critical" | "warning" | "tip";
+
+/** What a fix button does. */
+export type FixKind =
+  | { kind: "endProcess"; payload: { name: string; targets: ProcessTarget[] } }
+  | { kind: "openPage"; payload: { page: "processes" | "startup"; sort: "cpu" | "memory" | "io" | null; query: string | null } }
+  | { kind: "cleanTemp"; payload: { bytes: number } }
+  | { kind: "setPowerPlan"; payload: { guid: string; name: string } }
+  | { kind: "restart" }
+  | { kind: "openSettings"; payload: { page: string } };
+
+export type FixAction = FixKind & {
+  label: string;
+  /** Changes nothing that can't be undone or that anyone would miss: "Fix all safe items" runs it. */
+  safe: boolean;
+};
+
+export interface HealthIssue {
+  id: string;
+  severity: HealthSeverity;
+  title: string;
+  explanation: string;
+  /** Numbers and names for people who want them. */
+  detail: string;
+  /** Score points this issue costs; fixing it gives them back. */
+  points: number;
+  action: FixAction | null;
+  alternatives: FixAction[];
+}
+
+export interface HealthCheck {
+  id: string;
+  label: string;
+  status: "ok" | "issue" | "skipped";
+  summary: string;
+}
+
+export interface HealthReport {
+  score: number;
+  /** Most important first. */
+  issues: HealthIssue[];
+  checks: HealthCheck[];
+  checkedAt: number;
+  durationMs: number;
+}
+
+export type HealthEvent = { type: "progress"; percent: number; step: string };
 
 let runCounter = 0;
 export const newRunId = () => `run-${Date.now()}-${++runCounter}`;
@@ -223,6 +274,14 @@ export const api = {
   startupItems: () => invoke<StartupItem[]>("list_startup_items"),
   setStartupEnabled: (source: StartupSource, name: string, enabled: boolean) =>
     invoke<void>("set_startup_enabled", { source, name, enabled }),
+
+  /** The "Why is my PC slow?" check: about five seconds, with progress on `onEvent`. */
+  runHealthCheck: (onEvent: Channel<HealthEvent>) => invoke<HealthReport>("run_health_check", { onEvent }),
+  /** Returns the activity entry id (for Undo), or null when that plan was already active. */
+  setPowerPlan: (guid: string) => invoke<string | null>("set_power_plan", { guid }),
+  restartPc: () => invoke<void>("restart_pc"),
+  /** `page`: windowsupdate, storagesense, powersleep or batterysaver. */
+  openWindowsSettings: (page: string) => invoke<void>("open_windows_settings", { page }),
 
   activity: () => invoke<ActionRecord[]>("list_activity"),
   undoActivity: (id: string) => invoke<void>("undo_activity", { id }),

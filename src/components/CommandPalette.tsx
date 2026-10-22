@@ -6,6 +6,7 @@ import {
   CircleX,
   CornerDownLeft,
   Gauge,
+  HeartPulse,
   Lock,
   LucideIcon,
   Monitor,
@@ -22,6 +23,7 @@ import {
 import { api, CloseAction, errorText, ProcessInfo, SavedCommand } from "../api";
 import type { NavigateOptions } from "../App";
 import { useEndProcesses } from "../hooks/useActions";
+import { startHealthCheck } from "../hooks/useHealthCheck";
 import { setThemePref } from "../theme";
 import { useToast } from "./Toast";
 import { PAGES, PageId } from "../pages";
@@ -75,7 +77,7 @@ const CLOSE_LABELS: Record<CloseAction | "ask", string> = {
 };
 
 const RECENT_KEY = "palette-recent";
-const SUGGESTED = ["q-clean", "cmd-builtin.flush-dns", "cmd-builtin.restart-explorer", "q-taskmgr"];
+const SUGGESTED = ["q-speed", "q-clean", "cmd-builtin.flush-dns", "cmd-builtin.restart-explorer", "q-taskmgr"];
 
 function readRecent(): string[] {
   try {
@@ -143,6 +145,20 @@ export function CommandPalette({ elevated, onClose, onNavigate, onRunCommand, on
     };
 
     const quick: Item[] = [
+      {
+        id: "q-speed",
+        group: "Actions",
+        label: "Run speed check",
+        hint: "Find out why your PC is slow, and fix it",
+        keywords: "pc health slow speed check scan performance lag why score fix",
+        icon: HeartPulse,
+        color: "var(--cat-repair)",
+        type: "Check",
+        run: () => {
+          onNavigate("health");
+          startHealthCheck();
+        },
+      },
       { id: "q-term-ps", group: "Actions", label: "New PowerShell tab", icon: SquareTerminal, type: "Terminal", run: () => onOpenTerminal("powershell") },
       { id: "q-term-cmd", group: "Actions", label: "New Command Prompt tab", icon: TerminalIcon, type: "Terminal", run: () => onOpenTerminal("cmd") },
       { id: "q-term-wsl", group: "Actions", label: "New WSL tab", icon: Box, type: "Terminal", run: () => onOpenTerminal("wsl") },

@@ -16,6 +16,7 @@ import { PAGES, PageId, SECTIONS } from "./pages";
 import { Activity } from "./pages/Activity";
 import { Commands, PendingRun } from "./pages/Commands";
 import { Dashboard } from "./pages/Dashboard";
+import { Health } from "./pages/Health";
 import { ProcessSortKey, Processes } from "./pages/Processes";
 import { Settings } from "./pages/Settings";
 import { Startup } from "./pages/Startup";
@@ -63,8 +64,8 @@ function AppShell() {
         setPaletteOpen((open) => !open);
         return;
       }
-      // Ctrl+1..7 jump to the pages in sidebar order.
-      if (e.ctrlKey && !e.shiftKey && !e.altKey && /^[1-7]$/.test(e.key)) {
+      // Ctrl+1..9 jump to the pages in sidebar order.
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && /^[1-9]$/.test(e.key)) {
         const target = PAGES[Number(e.key) - 1];
         if (target) {
           e.preventDefault();
@@ -210,6 +211,7 @@ function AppShell() {
 
         <main className="content">
           {page === "dashboard" && <Dashboard metrics={metrics} onNavigate={navigate} onCleanTemp={cleanTemp.run} />}
+          {page === "health" && <Health elevated={appInfo.elevated} onNavigate={navigate} onRestartAsAdmin={restartAsAdmin} />}
           {page === "processes" && (
             <Processes active initialQuery={processQuery} initialSort={processSort} metrics={metrics.latest} />
           )}

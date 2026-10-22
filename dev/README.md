@@ -8,6 +8,7 @@ Hooks for manual checks or tests, from the browser console or a Playwright scrip
 - `window.__mock.calls` lists `run_command`, `terminal_write` and `terminal_close` calls.
 - `window.__MOCK_ELEVATED__ = true` (set before load) pretends the app runs as administrator.
 - `window.__MOCK_NOTICES__ = ["..."]` then `__mock.emit("app://notice")` shows backend notices as toasts.
+- PC health: the speed check streams progress for about five seconds and reports issues that match the rest of the mock (busy Chrome, nearly full D:, temp files, Power saver, six startup apps). Fixing one clears it on the next check. `window.__MOCK_HEALTH__ = "clear"` (set before load) reports a healthy PC, and `"restart"` adds updates waiting on a restart. `restart_pc` and `open_windows_settings` calls are listed in `__mock.calls`.
 
 `screenshot.cjs` opens each sidebar page in headless Chromium with the mock and saves screenshots:
 
