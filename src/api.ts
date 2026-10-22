@@ -148,10 +148,76 @@ export interface StartupItem {
   needsAdmin: boolean;
 }
 
+// ---- Services ----
+
+export type ServiceStartup = "automatic" | "automaticDelayed" | "manual" | "disabled";
+export type ServiceStatus = "running" | "stopped" | "starting" | "stopping" | "paused" | "pausing" | "resuming";
+export type ServicePublisher = "microsoft" | "thirdParty" | "unknown";
+/** `protected`: Windows needs it, so it can't be stopped or disabled. `important`: allowed, with a warning. */
+export type ServiceSafety = "protected" | "important" | "normal";
+export type ServiceAction = "start" | "stop" | "restart";
+
+export interface ServiceInfo {
+  /** Key name, e.g. "Spooler". */
+  name: string;
+  displayName: string;
+  description: string | null;
+  /** Plain-language summary for well-known services. */
+  summary: string | null;
+  status: ServiceStatus;
+  /** `null` when Windows doesn't let the app read the service's settings. */
+  startup: ServiceStartup | null;
+  pid: number | null;
+  /** Program file, or for svchost.exe-hosted services the DLL that holds the service. */
+  program: string | null;
+  commandLine: string | null;
+  account: string | null;
+  publisher: ServicePublisher;
+  company: string | null;
+  safety: ServiceSafety;
+  /** Why it's protected, or what breaks when it stops. */
+  safetyNote: string | null;
+  /** Running and accepts the stop command. */
+  canStop: boolean;
+  sharedProcess: boolean;
+  /** Key names of services it needs; load-order groups start with "+". */
+  dependencies: string[];
+  /** For a per-user copy (e.g. "CDPUserSvc_4f2a1"), the service it was made from. */
+  template: string | null;
+}
+
+export interface ServiceLink {
+  name: string;
+  displayName: string;
+  status: ServiceStatus | null;
+  group: boolean;
+}
+
+export interface ServiceDetails {
+  /** Services this one needs. */
+  dependencies: ServiceLink[];
+  /** Services that need this one (they stop when it stops). */
+  dependents: ServiceLink[];
+}
+
+export interface ServiceActionResult {
+  /** The service as it is afterwards. */
+  service: ServiceInfo | null;
+  /** Still starting or stopping when the wait ran out; Windows keeps going. */
+  timedOut: boolean;
+  /** Display names of services stopped (or, for a restart, started again) along with it. */
+  also: string[];
+  /** Something worth telling the user, e.g. that it stopped again by itself. */
+  note: string | null;
+  /** Activity entry for an Undo button (startup type changes). */
+  activityId: string | null;
+}
+
 export type Undo =
   | { type: "startupToggle"; source: StartupSource; name: string; enabled: boolean }
   | { type: "priority"; pid: number; startTime: number; name: string; previous: Priority }
   | { type: "restoreCommand"; command: SavedCommand }
+  | { type: "serviceStartup"; name: string; displayName: string; startup: ServiceStartup }
   | { type: "unknown" };
 
 export interface ActionRecord {
@@ -223,6 +289,13 @@ export const api = {
   startupItems: () => invoke<StartupItem[]>("list_startup_items"),
   setStartupEnabled: (source: StartupSource, name: string, enabled: boolean) =>
     invoke<void>("set_startup_enabled", { source, name, enabled }),
+
+  services: () => invoke<ServiceInfo[]>("list_services"),
+  service: (name: string) => invoke<ServiceInfo>("get_service", { name }),
+  serviceDetails: (name: string) => invoke<ServiceDetails>("get_service_details", { name }),
+  /** Waits (up to about 30 seconds) until the service has started or stopped. */
+  controlService: (name: string, action: ServiceAction) => invoke<ServiceActionResult>("control_service", { name, action }),
+  setServiceStartup: (name: string, startup: ServiceStartup) => invoke<ServiceActionResult>("set_service_startup", { name, startup }),
 
   activity: () => invoke<ActionRecord[]>("list_activity"),
   undoActivity: (id: string) => invoke<void>("undo_activity", { id }),
