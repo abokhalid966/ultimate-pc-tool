@@ -29,7 +29,7 @@ export function WingetMissing({ what, onRetry }: { what: string; onRetry: () => 
     <EmptyState
       icon={PackageX}
       title={`${what} need the free App Installer from Microsoft`}
-      body="Ultimate PC Tool uses Windows Package Manager (winget), which comes with App Installer. It's free in the Microsoft Store and takes a minute to install. Come back here afterwards."
+      body="Optimo uses Windows Package Manager (winget), which comes with App Installer. It's free in the Microsoft Store and takes a minute to install. Come back here afterwards."
       actions={
         <>
           <button className="btn btn-primary" onClick={() => appsApi.openAppInstaller().catch((e) => toast(errorText(e), "error"))}>

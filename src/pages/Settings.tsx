@@ -42,7 +42,7 @@ export function Settings({ appInfo, onRestartAsAdmin }: { appInfo: AppInfo; onRe
 
   return (
     <div className="page">
-      <PageHeader title="Settings" subtitle="Make Ultimate PC Tool work the way you like." />
+      <PageHeader title="Settings" subtitle="Make Optimo work the way you like." />
       <div className="settings">
         <section className="settings-group" aria-labelledby="set-appearance">
           <h2 id="set-appearance" className="section-title">
@@ -168,7 +168,7 @@ export function Settings({ appInfo, onRestartAsAdmin }: { appInfo: AppInfo; onRe
           <div className="card settings-row">
             <AppIcon size={40} />
             <div className="settings-row-text">
-              <strong style={{ fontWeight: 600 }}>Ultimate PC Tool</strong>
+              <strong style={{ fontWeight: 600 }}>Optimo</strong>
               <span>{appInfo.version ? `Version ${appInfo.version}` : "Version unknown"} · Monitor, quick fixes and startup manager for Windows</span>
             </div>
           </div>

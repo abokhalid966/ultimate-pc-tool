@@ -67,7 +67,7 @@ export interface ProcessInfo {
   protected: string | null;
   /** What breaks if this process is ended (allowed after a confirmation). */
   warning: string | null;
-  /** Ultimate PC Tool itself or its WebView2 helper processes. */
+  /** Optimo itself or its WebView2 helper processes. */
   isSelf: boolean;
 }
 
@@ -315,7 +315,7 @@ export interface InstalledApp {
   scope: AppScope;
   canUninstall: boolean;
   canQuiet: boolean;
-  /** Ultimate PC Tool itself. */
+  /** Optimo itself. */
   isSelf: boolean;
 }
 

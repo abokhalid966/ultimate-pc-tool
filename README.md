@@ -1,4 +1,4 @@
-# Ultimate PC Tool
+# Optimo
 
 An all-in-one Windows utility: live system monitor, process manager, saved commands, a built-in terminal and a startup apps manager, all reachable from one Ctrl+K command palette.
 
@@ -25,9 +25,9 @@ Built with [Tauri 2](https://tauri.app) (Rust) and React + TypeScript. The insta
 1. Open the [latest release](https://github.com/abokhalid966/ultimate-pc-tool/releases/latest).
 2. Under **Assets**, download the file ending in `_x64-setup.exe`.
 3. Run it. The app is not code-signed yet, so Windows SmartScreen shows "Windows protected your PC": click **More info**, then **Run anyway**.
-4. The installer adds Ultimate PC Tool to the Start menu. Some actions (all-users startup apps, services, Windows temp cleanup) need **Restart as administrator** from the sidebar.
+4. The installer adds Optimo to the Start menu. Some actions (all-users startup apps, services, Windows temp cleanup) need **Restart as administrator** from the sidebar.
 
-Every push to `main` also builds the installer on GitHub Actions (download `ultimate-pc-tool-windows` from the run's artifacts), and each push to `main` publishes the release for the version in `src-tauri/tauri.conf.json`.
+Every push to `main` also builds the installer on GitHub Actions (download `optimo-windows` from the run's artifacts), and each push to `main` publishes the release for the version in `src-tauri/tauri.conf.json`.
 
 ## Develop
 

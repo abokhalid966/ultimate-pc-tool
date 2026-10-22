@@ -37,7 +37,7 @@ pub struct InstalledApp {
     pub scope: Scope,
     pub can_uninstall: bool,
     pub can_quiet: bool,
-    /// Ultimate PC Tool itself, removed from Windows Settings instead.
+    /// Optimo itself, removed from Windows Settings instead.
     pub is_self: bool,
 }
 
@@ -60,7 +60,9 @@ const WAIT_LIMIT: Duration = Duration::from_secs(30 * 60);
 
 #[cfg_attr(not(windows), allow(dead_code))]
 fn is_self(name: &str) -> bool {
-    name.trim().eq_ignore_ascii_case("Ultimate PC Tool")
+    let name = name.trim();
+    // Releases before 0.2.1 were named "Ultimate PC Tool".
+    name.eq_ignore_ascii_case("Optimo") || name.eq_ignore_ascii_case("Ultimate PC Tool")
 }
 
 #[cfg_attr(not(windows), allow(dead_code))]
@@ -302,7 +304,7 @@ fn uninstall(app: &AppHandle, id: &str, quiet: bool) -> Result<UninstallOutcome,
     };
     let name = e.name.trim().to_string();
     if is_self(&name) {
-        return Err("To remove Ultimate PC Tool, use Settings > Apps > Installed apps in Windows.".into());
+        return Err("To remove Optimo, use Settings > Apps > Installed apps in Windows.".into());
     }
     if e.no_remove {
         return Err(format!("{name} can't be uninstalled: its installer doesn't allow it."));

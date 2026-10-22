@@ -36,7 +36,7 @@ interface Group {
 
 const same = (p: ProcessTarget, q: ProcessTarget | null) => !!q && p.pid === q.pid && p.startTime === q.startTime;
 const itemKey = (p: ProcessTarget) => `${p.pid}-${p.startTime}`;
-const displayName = (p: ProcessInfo) => (p.isSelf && !p.name.toLowerCase().startsWith("msedgewebview2") ? "Ultimate PC Tool" : p.name);
+const displayName = (p: ProcessInfo) => (p.isSelf && !p.name.toLowerCase().startsWith("msedgewebview2") ? "Optimo" : p.name);
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 
 interface Props {

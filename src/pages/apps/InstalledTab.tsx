@@ -295,7 +295,7 @@ function AppRow({
 }) {
   const toast = useToast();
   const why = app.isSelf
-    ? "To remove Ultimate PC Tool, use Settings > Apps > Installed apps in Windows."
+    ? "To remove Optimo, use Settings > Apps > Installed apps in Windows."
     : !app.canUninstall
       ? "This app's installer doesn't allow removing it here."
       : blocked

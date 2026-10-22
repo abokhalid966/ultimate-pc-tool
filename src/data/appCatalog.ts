@@ -46,7 +46,7 @@ export const CATALOG: CatalogApp[] = [
     description: "Music and podcasts streaming.",
     category: "Media",
     match: /^Spotify\b/i,
-    note: "Spotify refuses to install while Ultimate PC Tool runs as administrator.",
+    note: "Spotify refuses to install while Optimo runs as administrator.",
   },
   { id: "OBSProject.OBSStudio", name: "OBS Studio", description: "Record your screen or stream live.", category: "Media", match: /^OBS Studio\b/i },
   { id: "Audacity.Audacity", name: "Audacity", description: "Record and edit audio.", category: "Media", match: /^Audacity\b/i },

@@ -153,7 +153,7 @@ function AppShell() {
           <div className="brand">
             <AppIcon className="brand-mark" />
             <div className="brand-text">
-              <span className="brand-name">Ultimate PC Tool</span>
+              <span className="brand-name">Optimo</span>
               <span className="brand-sub">{appInfo.version ? `Version ${appInfo.version}` : "For Windows"}</span>
             </div>
           </div>
@@ -275,7 +275,7 @@ function CloseDialog({ onDone }: { onDone: () => void }) {
 
   return (
     <Modal
-      title="Keep Ultimate PC Tool running?"
+      title="Keep Optimo running?"
       onClose={onDone}
       footer={
         <>

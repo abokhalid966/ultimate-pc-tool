@@ -26,7 +26,7 @@ pub struct ProcessInfo {
     pub protected: Option<String>,
     /// What breaks if this process is ended (allowed, but confirmed first).
     pub warning: Option<String>,
-    /// Ultimate PC Tool itself or its WebView2 helper processes.
+    /// Optimo itself or its WebView2 helper processes.
     pub is_self: bool,
 }
 
@@ -64,11 +64,11 @@ const RISKY: &[(&str, &str)] = &[
     ("msedgewebview2.exe", "Teams, Outlook, Widgets and other apps use this. They may stop working until you restart them."),
 ];
 
-const SELF_MESSAGE: &str = "That's part of Ultimate PC Tool. Use Quit in the tray menu to close it.";
+const SELF_MESSAGE: &str = "That's part of Optimo. Use Quit in the tray menu to close it.";
 const WEBVIEW: &str = "msedgewebview2.exe";
 
 fn core_message(name: &str) -> String {
-    format!("{name} is a core part of Windows. Ending it could crash your PC, sign you out or break the desktop, so Ultimate PC Tool won't do it.")
+    format!("{name} is a core part of Windows. Ending it could crash your PC, sign you out or break the desktop, so Optimo won't do it.")
 }
 
 fn is_core(name: &str, exe: Option<&str>) -> bool {

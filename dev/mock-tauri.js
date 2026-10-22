@@ -37,8 +37,8 @@ window.__TAURI_INTERNALS__ = (() => {
     ...extra,
   });
   const core = (name) =>
-    `${name} is a core part of Windows. Ending it could crash your PC, sign you out or break the desktop, so Ultimate PC Tool won't do it.`;
-  const selfMsg = "That's part of Ultimate PC Tool. Use Quit in the tray menu to close it.";
+    `${name} is a core part of Windows. Ending it could crash your PC, sign you out or break the desktop, so Optimo won't do it.`;
+  const selfMsg = "That's part of Optimo. Use Quit in the tray menu to close it.";
   let procs = [
     proc("System", { pid: 4, parentPid: 0, exe: null, protected: core("System"), memory: 2e6 }),
     proc("csrss.exe", { pid: 600, exe: null, protected: core("csrss.exe") }),
@@ -48,7 +48,7 @@ window.__TAURI_INTERNALS__ = (() => {
       exe: "C:\\Windows\\explorer.exe",
       warning: "Your taskbar, desktop and File Explorer windows will close. Windows usually starts them again within a few seconds.",
     }),
-    proc("ultimate-pc-tool.exe", { pid: 5000, isSelf: true, protected: selfMsg, exe: "C:\\Users\\me\\AppData\\Local\\Ultimate PC Tool\\ultimate-pc-tool.exe" }),
+    proc("ultimate-pc-tool.exe", { pid: 5000, isSelf: true, protected: selfMsg, exe: "C:\\Users\\me\\AppData\\Local\\Optimo\\ultimate-pc-tool.exe" }),
     proc("msedgewebview2.exe", { pid: 5001, parentPid: 5000, isSelf: true, protected: selfMsg }),
     proc("msedgewebview2.exe", { pid: 5002, parentPid: 5001, isSelf: true, protected: selfMsg }),
     proc("msedgewebview2.exe", { warning: "Teams, Outlook, Widgets and other apps use this. They may stop working until you restart them." }),
@@ -303,7 +303,7 @@ window.__TAURI_INTERNALS__ = (() => {
     program("Microsoft OneDrive", "Microsoft Corporation", "23.246.1127.0002", 310, "2024-01-18", { scope: "user", location: appData("Local\\Microsoft\\OneDrive") }),
     program("Bitwarden", "Bitwarden Inc.", "2024.1.0", 410, "2024-01-22", { scope: "user", location: appData("Local\\Programs\\Bitwarden") }),
     program("PowerToys (Preview) x64", "Microsoft Corporation", "0.77.0", 820, "2024-01-10", { canQuiet: true }),
-    program("Ultimate PC Tool", "abokhalid", "0.1.0", 12, "2024-02-05", { scope: "user", isSelf: true, canUninstall: false, location: appData("Local\\Ultimate PC Tool") }),
+    program("Optimo", "abokhalid", "0.1.0", 12, "2024-02-05", { scope: "user", isSelf: true, canUninstall: false, location: appData("Local\\Optimo") }),
   ];
   const wingetUpgrades = [
     { name: "Google Chrome", id: "Google.Chrome", partialId: false, version: "120.0.6099.130", available: "121.0.6167.86", source: "winget", explicit: false },
@@ -377,7 +377,7 @@ window.__TAURI_INTERNALS__ = (() => {
       const p = procs.find((x) => x.pid === pid && x.startTime === startTime);
       if (!p) fail("That app already closed, so nothing was changed.");
       if (p.protected) fail(p.protected);
-      if (priority === "realtime") fail("Realtime priority can freeze your PC, so Ultimate PC Tool doesn't offer it.");
+      if (priority === "realtime") fail("Realtime priority can freeze your PC, so Optimo doesn't offer it.");
       const previous = priorities[pid] ?? "normal";
       // Like Windows without admin rights: High is the most a normal user gets... in the mock, Low becomes Below normal.
       const applied = priority === "idle" && name === "notepad.exe" ? "belowNormal" : priority;
@@ -548,7 +548,7 @@ window.__TAURI_INTERNALS__ = (() => {
       const p = programs.find((x) => x.id === id);
       const outcome = { removed: false, pending: false, cancelled: false, restartNeeded: false, message: null };
       if (!p) return { ...outcome, removed: true };
-      if (p.isSelf) fail("To remove Ultimate PC Tool, use Settings > Apps > Installed apps in Windows.");
+      if (p.isSelf) fail("To remove Optimo, use Settings > Apps > Installed apps in Windows.");
       await sleep(quiet ? 1400 : 2400);
       if (p.userCancels) return { ...outcome, cancelled: true };
       const detail = `Version ${p.version} · "${p.location ?? "C:\\Program Files\\App"}\\uninstall.exe"${quiet ? " /S" : ""}`;

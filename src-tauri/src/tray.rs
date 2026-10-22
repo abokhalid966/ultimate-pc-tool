@@ -23,14 +23,14 @@ pub fn hide_main_window(app: &AppHandle) {
 }
 
 pub fn setup(app: &AppHandle) -> tauri::Result<()> {
-    let show = MenuItem::with_id(app, "show", "Open Ultimate PC Tool", true, None::<&str>)?;
+    let show = MenuItem::with_id(app, "show", "Open Optimo", true, None::<&str>)?;
     let palette = MenuItem::with_id(app, "palette", "Command palette", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&show, &palette, &PredefinedMenuItem::separator(app)?, &quit])?;
 
     TrayIconBuilder::with_id(TRAY_ID)
         .icon(app.default_window_icon().cloned().expect("app icon missing"))
-        .tooltip("Ultimate PC Tool")
+        .tooltip("Optimo")
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id().as_ref() {

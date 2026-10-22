@@ -148,7 +148,7 @@ fn set_process_priority(
     priority: Priority,
 ) -> Result<PriorityChange, String> {
     if priority == Priority::Realtime {
-        return Err("Realtime priority can freeze your PC, so Ultimate PC Tool doesn't offer it.".into());
+        return Err("Realtime priority can freeze your PC, so Optimo doesn't offer it.".into());
     }
     let processes = snapshot.read().processes.clone();
     let change = processes::set_priority(Target { pid, start_time }, &name, priority, &processes)?;
