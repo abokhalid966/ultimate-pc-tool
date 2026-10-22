@@ -524,7 +524,7 @@ window.__TAURI_INTERNALS__ = (() => {
 
 
   // ---- v0.4: System info, Network, Boost, Privacy ----
-  const specs = { manufacturer: "Micro-Star International Co., Ltd.", model: "MS-7E26", pcName: "GAMING-PC", board: "MSI MAG B650 TOMAHAWK WIFI", bios: "American Megatrends 1.A0", biosDate: "2025-03-12", firmware: "UEFI, Secure Boot on", serial: "To be filled by O.E.M.", os: "Microsoft Windows 11 Pro", osVersion: "24H2", osBuild: "26100.2314", osArch: "64-bit", installed: "2024-11-02", lastBoot: "2026-10-21 08:14", cpu: "AMD Ryzen 7 7800X3D 8-Core Processor", cores: 8, threads: 16, maxMhz: 4201, memory: 32 * GB, memorySlots: 4, modules: [{ slot: "DIMM A2", size: 16 * GB, speed: 6000, maker: "G.Skill", part: "F5-6000J3038F16G" }, { slot: "DIMM B2", size: 16 * GB, speed: 6000, maker: "G.Skill", part: "F5-6000J3038F16G" }], gpus: [{ name: "NVIDIA GeForce RTX 4070", driver: "32.0.15.6614", driverDate: "2025-09-30", memory: 12 * GB, resolution: "2560 x 1440", refresh: 165 }], disks: [{ name: "Samsung SSD 990 PRO 1TB", media: "SSD", bus: "NVMe", size: 1000 * GB, health: "Healthy" }, { name: "WDC WD20EZBX", media: "HDD", bus: "SATA", size: 2000 * GB, health: "Healthy" }], battery: null };
+  const specs = { manufacturer: "Micro-Star International Co., Ltd.", model: "MS-7E26", pcName: "GAMING-PC", board: "MSI MAG B650 TOMAHAWK WIFI", bios: "American Megatrends 1.A0", biosDate: "2025-03-12", firmware: "UEFI, Secure Boot on", serial: "To be filled by O.E.M.", os: "Microsoft Windows 11 Pro", osVersion: "24H2", osBuild: "26100.2314", osArch: "64-bit", installed: "2024-11-02", lastBoot: "2026-10-21 08:14", cpu: "AMD Ryzen 7 7800X3D 8-Core Processor", cores: 8, threads: 16, maxMhz: 4201, memory: 32 * GB, memorySlots: 4, modules: [{ slot: "DIMM A2", size: 16 * GB, speed: 6000, maker: "G.Skill", part: "F5-6000J3038F16G" }, { slot: "DIMM B2", size: 16 * GB, speed: 6000, maker: "G.Skill", part: "F5-6000J3038F16G" }], gpus: [{ name: "NVIDIA GeForce RTX 4070", driver: "32.0.15.6614", driverDate: "2025-09-30", memory: 12 * GB, resolution: "2560 x 1440", refresh: 165 }], disks: [{ name: "Samsung SSD 990 PRO 1TB", media: "SSD", bus: "NVMe", size: 1000 * GB, health: "Healthy" }, { name: "WDC WD20EZBX", media: "HDD", bus: "SATA", size: 2000 * GB, health: "Healthy" }], battery: { design: 57000, full: 48200 } };
   const adapters = [{ index: 12, name: "Wi-Fi", description: "Intel Wi-Fi 6E AX211", wireless: true, linkSpeed: 1.2e9, mac: "A4-C3-F0-11-22-33", ipv4: ["192.168.1.24"], ipv6: [], gateway: ["192.168.1.1"], dns: ["192.168.1.1"], dnsAutomatic: true }];
   const tweaks = [
     ["ads-id", "Turn off the advertising ID", "Apps can't use an ID to show you personalized ads.", "Ads and suggestions", true, false, false, true],
@@ -596,7 +596,42 @@ window.__TAURI_INTERNALS__ = (() => {
       bloat = bloat.filter((b) => !targets.some((t) => t.fullName === b.fullName));
       return targets.map((t) => ({ label: t.label, error: null }));
     },
-    get_app_info: () => ({ elevated: !!window.__MOCK_ELEVATED__, version: "0.4.0" }),
+    get_drivers: async () => (await sleep(700), {
+      maker: "Micro-Star International Co., Ltd.",
+      makerLink: { label: "MSI support", url: "https://www.msi.com/support/download" },
+      problems: [{ name: "PCI Simple Communications Controller", category: "Other", code: 28, message: "No driver is installed", download: { label: "MSI support", url: "https://www.msi.com/support/download" } }],
+      drivers: [
+        { name: "NVIDIA GeForce RTX 4070", category: "Graphics", version: "31.0.15.3623", date: "2024-06-12", provider: "NVIDIA", ageDays: 862, old: true, download: { label: "NVIDIA drivers", url: "https://www.nvidia.com/en-us/drivers/" } },
+        { name: "Realtek Gaming 2.5GbE Family Controller", category: "Network", version: "10.48.824.2021", date: "2021-08-24", provider: "Realtek", ageDays: 1885, old: true, download: { label: "MSI support", url: "https://www.msi.com/support/download" } },
+        { name: "AMD GPIO Controller", category: "Chipset", version: "2.2.0.130", date: "2025-02-11", provider: "Advanced Micro Devices, Inc", ageDays: 618, old: false, download: { label: "AMD drivers", url: "https://www.amd.com/en/support/download/drivers.html" } },
+        { name: "Realtek USB Audio", category: "Sound", version: "6.3.9600.2355", date: "2025-05-02", provider: "Realtek Semiconductor Corp.", ageDays: 538, old: false, download: { label: "MSI support", url: "https://www.msi.com/support/download" } },
+      ],
+    }),
+    open_driver_link: () => {},
+    storage_find_duplicates: async ({ onEvent }) => {
+      for (let i = 1; i <= 4; i++) {
+        await sleep(300);
+        send(onEvent, { type: "scanning", files: i * 3100, current: `C:\\Users\\you\\Pictures\\Trip ${i}` });
+      }
+      send(onEvent, { type: "comparing", done: 40, total: 120 });
+      await sleep(500);
+      const day = 86400000;
+      return {
+        root: "C:\\Users\\you",
+        scanned: 12480,
+        wasted: 5.6 * GB,
+        cancelled: false,
+        truncated: false,
+        groups: [
+          { size: 4.2 * GB, files: [{ path: "C:\\Users\\you\\Videos\\Wedding.mp4", modified: Date.now() - 400 * day }, { path: "C:\\Users\\you\\Desktop\\Wedding (copy).mp4", modified: Date.now() - 30 * day }] },
+          { size: 700e6, files: [{ path: "C:\\Users\\you\\Downloads\\Win11_24H2.iso", modified: Date.now() - 90 * day }, { path: "C:\\Users\\you\\Downloads\\Win11_24H2 (1).iso", modified: Date.now() - 80 * day }, { path: "C:\\Users\\you\\Documents\\Backup\\Win11_24H2.iso", modified: Date.now() - 10 * day }] },
+          { size: 3.4e6, files: [{ path: "C:\\Users\\you\\Pictures\\IMG_2041.jpg", modified: Date.now() - 200 * day }, { path: "C:\\Users\\you\\OneDrive\\Pictures\\IMG_2041.jpg", modified: Date.now() - 100 * day }] },
+        ],
+      };
+    },
+    storage_cancel_duplicates: () => {},
+    storage_delete_duplicates: async ({ paths }) => (await sleep(500), { deleted: paths, bytes: 1.4 * GB, failed: [], activityId: "dupe-undo" }),
+    get_app_info: () => ({ elevated: !!window.__MOCK_ELEVATED__, version: "0.5.0" }),
     restart_as_admin: () => fail("You chose No on the administrator prompt, so the app keeps running as before."),
     take_notices: () => (window.__MOCK_NOTICES__ || []).splice(0),
     get_settings: () => ({ ...settings }),

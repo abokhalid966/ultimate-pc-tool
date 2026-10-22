@@ -203,10 +203,33 @@ function SpecsView({ s }: { s: Specs }) {
               <span className="muted"> of its original capacity</span>
             </Row>
             <Row k="Capacity now">{`${(s.battery.full / 1000).toFixed(1)} Wh (new: ${(s.battery.design / 1000).toFixed(1)} Wh)`}</Row>
+            <BatteryReport />
           </Card>
         )}
       </div>
     </>
+  );
+}
+
+/** Windows' own battery report: charge history, usage and capacity over time, opened in the browser. */
+function BatteryReport() {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const open = () => {
+    setBusy(true);
+    api
+      .runCommand(`$f = Join-Path $env:TEMP 'optimo-battery-report.html'; powercfg /batteryreport /output $f | Out-Null; Start-Process $f`, "powershell", false, "Battery report")
+      .then((out) => out.code !== 0 && toast(out.stderr || "Windows couldn't make the battery report.", "error"))
+      .catch((e) => toast(errorText(e), "error"))
+      .finally(() => setBusy(false));
+  };
+  return (
+    <div className="spec-actions">
+      <button className="btn btn-sm" onClick={open} disabled={busy}>
+        <ScrollText size={14} /> {busy ? "Making the report..." : "Full battery report"}
+      </button>
+      <span className="muted small">Charge history, usage and how capacity changed over time.</span>
+    </div>
   );
 }
 

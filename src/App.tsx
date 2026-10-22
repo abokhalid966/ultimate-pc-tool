@@ -25,6 +25,7 @@ import { Startup } from "./pages/Startup";
 import { Storage } from "./pages/Storage";
 import { Automations } from "./pages/Automations";
 import { Boost } from "./pages/Boost";
+import { Drivers } from "./pages/Drivers";
 import { Network } from "./pages/Network";
 import { Privacy } from "./pages/Privacy";
 import { SystemInfo } from "./pages/SystemInfo";
@@ -248,6 +249,7 @@ function AppShell() {
           {page === "automations" && <Automations elevated={appInfo.elevated} />}
           {page === "storage" && <Storage elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} disks={m?.disks ?? []} />}
           {page === "sysinfo" && <SystemInfo />}
+          {page === "drivers" && <Drivers />}
           {page === "network" && <Network elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} />}
           {page === "boost" && <Boost onRestartAsAdmin={restartAsAdmin} />}
           {page === "privacy" && <Privacy elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} />}

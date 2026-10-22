@@ -4,7 +4,7 @@ import { useSyncExternalStore } from "react";
 import { Channel } from "@tauri-apps/api/core";
 import { api, CleanupCategory, CleanupKind, CleanupResult, CleanupRunEvent, CleanupSummary, errorText, FolderView, ScanEvent, ScanSummary } from "../../api";
 
-export type StorageTab = "cleanup" | "finder";
+export type StorageTab = "cleanup" | "finder" | "duplicates";
 
 export interface CleanupState {
   /** In the order the backend lists them; missing until measured. */

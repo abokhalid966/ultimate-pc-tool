@@ -4,22 +4,23 @@ An all-in-one Windows utility: live system monitor, PC health check, cleanup and
 
 Built with [Tauri 2](https://tauri.app) (Rust) and React + TypeScript. The installer is around 10 MB and the app idles at low memory.
 
-## Features (v0.4)
+## Features (v0.5)
 
 | Area | What it does |
 |---|---|
 | **Dashboard** | A plain-language health check ("Your PC is running smoothly", or what needs attention with a one-click fix), live CPU and memory gauges, network and disk graphs, top apps, drive space and sensor temperatures |
 | **PC health** | "Why is my PC slow?": a five-second speed check that gives a 0-100 score and ranked, plain-language issues (apps hogging the processor or memory, full drives, too many startup apps, pending restarts and updates, temp files, Power saver, heat, a busy hard disk), each with a one-click fix and "Fix all safe items" |
 | **Graphics card** | GPU load, video memory and temperature on the Dashboard and in the mini overlay |
-| **System info** | Everything inside the PC in plain words: processor, memory sticks and speed, graphics card and driver, drives and their health, Windows version, motherboard and BIOS, battery health. "Copy specs" puts a short summary on the clipboard (without the serial number) |
+| **System info** | Everything inside the PC in plain words: processor, memory sticks and speed, graphics card and driver, drives and their health, Windows version, motherboard and BIOS, battery health and the full Windows battery report. "Copy specs" puts a short summary on the clipboard (without the serial number) |
 | **Network** | Wi-Fi or Ethernet details, public IP and provider, an internet speed test (download, upload, ping) with live progress, a DNS switcher (Cloudflare, Google, Quad9, AdGuard or automatic, with undo) and DNS speed test, and the apps that are online right now |
 | **Processes** | Search, sort, group by app, end one or all instances, change priority, open file location |
 | **Quick fixes** | Library of one-click fixes (flush DNS, SFC, DISM, winget upgrades...) plus your own commands with `{variables}`, optionally run as administrator |
 | **Terminal** | Real PowerShell, Command Prompt and WSL tabs inside the app |
 | **Startup apps** | Turn apps on or off at Windows startup, using the same mechanism as Task Manager |
 | **Apps** | Every installed app with its size and install date, and an Uninstall button that runs the app's own uninstaller; app updates through winget (one at a time or all at once, with live progress); and a Fresh-install toolkit to install popular apps in one go |
+| **Drivers** | Devices that aren't working (no driver, stopped by Windows...) and drivers from device makers that look out of date, each with the right download page: NVIDIA, AMD or Intel's own tools, your PC or motherboard maker's support site, or Windows Update |
 | **Services** | Every Windows service with a plain-language explanation, start, stop and restart, and change how it starts (with undo) |
-| **Storage** | Safe cleanup of temp files, caches, browser caches, the Recycle Bin and Windows Update leftovers; and a Space finder that scans a drive or folder and shows a map of the biggest folders and largest files, with Move to Recycle Bin and undo |
+| **Storage** | Safe cleanup of temp files, caches, browser caches, the Recycle Bin and Windows Update leftovers; a Space finder that scans a drive or folder and shows a map of the biggest folders and largest files, with Move to Recycle Bin and undo; and a Duplicate finder that compares files byte for byte and moves the extra copies to the Recycle Bin (always keeping one), with undo |
 | **Boost** | One-click game mode: switches to the High performance power plan, closes the apps you pick, and pauses Windows Search indexing and SysMain. One more click (or the tray icon) puts everything back and reopens the apps |
 | **Privacy** | 17 plain-language switches for Windows ads, suggestions, tracking, Bing in Start search and the Copilot button, with "Apply recommended" and undo; and a remover for preinstalled extras like Candy Crush, Clipchamp and Microsoft News |
 | **Automations** | Routine jobs on a schedule: clean temporary files weekly, clear browser caches, check for app updates daily, run the speed check, or any of your saved commands, when Optimo starts, daily, weekly or every few hours. Missed runs catch up the next time the app is open |

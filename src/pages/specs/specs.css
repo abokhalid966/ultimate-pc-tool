@@ -65,3 +65,11 @@
   padding-top: 4px;
   border-top: 1px dashed var(--card-stroke);
 }
+.spec-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--fill-subtle);
+}

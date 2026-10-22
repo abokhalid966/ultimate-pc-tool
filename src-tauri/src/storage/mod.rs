@@ -2,6 +2,7 @@
 //! moving things to the Recycle Bin with undo).
 
 mod cleaner;
+pub mod dupes;
 mod safety;
 mod scan;
 #[cfg(windows)]
@@ -23,6 +24,7 @@ pub use cleaner::CleanupKind;
 use cleaner::{CleanupCategory, CleanupResult, CleanupRunEvent};
 use safety::{Rules, Scope, Verdict};
 use scan::{FolderView, Tree};
+pub use dupes::Dupes;
 
 // ---- Cleanup ----
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, Box, Brush, CircleX, CornerDownLeft, Gauge, HeartPulse, Lock, LucideIcon, Monitor, Moon, PictureInPicture2, Power, Rocket, Search, Settings as SettingsIcon, ShieldCheck, SquareTerminal, Sun, Terminal as TerminalIcon, Wifi, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Box, Brush, CircleX, Copy, CornerDownLeft, Gauge, HeartPulse, Lock, LucideIcon, Monitor, Moon, PictureInPicture2, Power, Rocket, Search, Settings as SettingsIcon, ShieldCheck, SquareTerminal, Sun, Terminal as TerminalIcon, Wifi, X } from "lucide-react";
 import { api, CloseAction, errorText, ProcessInfo, SavedCommand } from "../api";
 import type { NavigateOptions } from "../App";
 import { useEndProcesses } from "../hooks/useActions";
@@ -8,6 +8,7 @@ import { setThemePref } from "../theme";
 import { useToast } from "./Toast";
 import { PAGES, PageId } from "../pages";
 import { categoryLook } from "../categories";
+import { setTab as setStorageTab } from "../pages/storage/state";
 import type { ShellKind } from "../pages/Terminal";
 
 interface Item {
@@ -152,6 +153,19 @@ export function CommandPalette({ elevated, onClose, onNavigate, onRunCommand, on
             .boost()
             .then((b) => (b.state.active ? api.stopBoost() : api.startBoost()).then(() => toast(b.state.active ? "Boost is off." : "Boost is on.", "success")))
             .catch((e) => toast(errorText(e), "error")),
+      },
+      {
+        id: "q-dupes",
+        group: "Actions",
+        label: "Find duplicate files",
+        hint: "Free space taken by extra copies",
+        keywords: "duplicates copies same files storage space",
+        icon: Copy,
+        type: "Action",
+        run: () => {
+          setStorageTab("duplicates");
+          onNavigate("storage");
+        },
       },
       {
         id: "q-speedtest",

@@ -1,6 +1,6 @@
-import { Activity, CalendarClock, EyeOff, Gauge, HardDrive, HeartPulse, Info, LayoutGrid, ListTree, Power, Rocket, ServerCog, Settings, SquareTerminal, Wifi, Zap } from "lucide-react";
+import { Activity, CalendarClock, CircuitBoard, EyeOff, Gauge, HardDrive, HeartPulse, Info, LayoutGrid, ListTree, Power, Rocket, ServerCog, Settings, SquareTerminal, Wifi, Zap } from "lucide-react";
 
-export type PageId = "dashboard" | "health" | "processes" | "sysinfo" | "network" | "boost" | "privacy" | "commands" | "automations" | "terminal" | "startup" | "apps" | "services" | "storage" | "activity" | "settings";
+export type PageId = "dashboard" | "health" | "processes" | "sysinfo" | "network" | "drivers" | "boost" | "privacy" | "commands" | "automations" | "terminal" | "startup" | "apps" | "services" | "storage" | "activity" | "settings";
 
 export interface PageInfo {
   id: PageId;
@@ -20,6 +20,7 @@ export const PAGES: PageInfo[] = [
   { id: "network", label: "Network", description: "Internet speed test, DNS and apps that are online", icon: Wifi, section: "Monitor" },
   { id: "startup", label: "Startup apps", description: "Choose what starts with Windows", icon: Power, section: "Manage" },
   { id: "apps", label: "Apps", description: "Uninstall, update and install apps", icon: LayoutGrid, section: "Manage" },
+  { id: "drivers", label: "Drivers", description: "Find old drivers and devices that aren't working", icon: CircuitBoard, section: "Manage" },
   { id: "services", label: "Services", description: "Background programs for Windows and your apps", icon: ServerCog, section: "Manage" },
   { id: "storage", label: "Storage", description: "Free up disk space and see what fills your drives", icon: HardDrive, section: "Manage" },
   { id: "privacy", label: "Privacy", description: "Turn off ads and tracking, remove preinstalled apps", icon: EyeOff, section: "Manage" },

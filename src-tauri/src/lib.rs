@@ -6,6 +6,7 @@ mod autostart;
 mod boost;
 mod cleanup;
 mod commands;
+mod drivers;
 mod gpu;
 mod health;
 mod metrics;
@@ -346,6 +347,7 @@ pub fn run() {
         .manage(automations::Automations::default())
         .manage(boost::Boost::default())
         .manage(storage::Scans::default())
+        .manage(storage::Dupes::default())
         .manage(CommandLibrary::default())
         .manage(ActivityLog::default())
         .manage(Terminals::default())
@@ -501,6 +503,11 @@ pub fn run() {
             storage::storage_delete,
             storage::storage_reveal,
             storage::storage_pick_folder,
+            storage::dupes::storage_find_duplicates,
+            storage::dupes::storage_cancel_duplicates,
+            storage::dupes::storage_delete_duplicates,
+            drivers::get_drivers,
+            drivers::open_driver_link,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

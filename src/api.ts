@@ -173,6 +173,60 @@ export interface PrivacyTweak {
   applied: boolean;
 }
 
+export interface DriverLink {
+  label: string;
+  url: string;
+}
+
+export interface Driver {
+  name: string;
+  category: string;
+  version: string;
+  date: string;
+  provider: string;
+  ageDays: number | null;
+  old: boolean;
+  download: DriverLink;
+}
+
+export interface DriverProblem {
+  name: string;
+  category: string;
+  code: number;
+  message: string;
+  download: DriverLink;
+}
+
+export interface DriverReport {
+  maker: string;
+  makerLink: DriverLink | null;
+  problems: DriverProblem[];
+  drivers: Driver[];
+}
+
+export type DupeEvent = { type: "scanning"; files: number; current: string } | { type: "comparing"; done: number; total: number };
+
+export interface DupeGroup {
+  size: number;
+  files: { path: string; modified: number }[];
+}
+
+export interface DupeResult {
+  root: string;
+  groups: DupeGroup[];
+  scanned: number;
+  wasted: number;
+  cancelled: boolean;
+  truncated: boolean;
+}
+
+export interface DupeDeleteResult {
+  deleted: string[];
+  bytes: number;
+  failed: { path: string; error: string }[];
+  activityId: string | null;
+}
+
 export interface BloatApp {
   label: string;
   package: string;
@@ -610,6 +664,11 @@ export const api = {
   stopBoost: () => invoke<BoostResult>("stop_boost"),
   privacyTweaks: () => invoke<PrivacyTweak[]>("list_privacy_tweaks"),
   setPrivacyTweaks: (ids: string[], on: boolean) => invoke<string | null>("set_privacy_tweaks", { ids, on }),
+  drivers: () => invoke<DriverReport>("get_drivers"),
+  openDriverLink: (url: string) => invoke<void>("open_driver_link", { url }),
+  findDuplicates: (path: string | null, minSize: number, onEvent: Channel<DupeEvent>) => invoke<DupeResult>("storage_find_duplicates", { path, minSize, onEvent }),
+  cancelDuplicates: () => invoke<void>("storage_cancel_duplicates"),
+  deleteDuplicates: (paths: string[]) => invoke<DupeDeleteResult>("storage_delete_duplicates", { paths }),
   bloatApps: () => invoke<BloatApp[]>("list_bloat_apps"),
   removeBloatApps: (targets: { fullName: string; label: string }[]) => invoke<{ label: string; error: string | null }[]>("remove_bloat_apps", { targets }),
   getAutostart: () => invoke<boolean>("get_autostart"),

@@ -1,0 +1,56 @@
+/* Drivers page. */
+
+.drv-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.drv-summary > div {
+  flex: 1;
+}
+.drv-summary p {
+  margin: 2px 0 0;
+}
+.drv-h {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.drv-problems {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+}
+.drv-problems li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--fill-subtle);
+}
+.drv-problems li:first-child {
+  border-top: 0;
+}
+.drv-problems li > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.drv-table-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.drv-version {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.drv-action {
+  text-align: right;
+  white-space: nowrap;
+}
+.drv-note {
+  margin: 12px 0 0;
+}
