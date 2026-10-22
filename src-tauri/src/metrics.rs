@@ -141,6 +141,12 @@ fn mem_percent(sys: &System) -> f64 {
     if total > 0 { sys.used_memory() as f64 / total as f64 * 100.0 } else { 0.0 }
 }
 
+/// The latest temperature readings, once they look real (see `Temps::plausible`).
+pub fn current_temperatures() -> Option<Vec<TempInfo>> {
+    let temps = TEMPS.read();
+    temps.plausible.then(|| temps.list.clone())
+}
+
 /// The temperature for the tray tooltip, only once readings look real.
 fn tray_temperature() -> Option<f32> {
     let temps = TEMPS.read();

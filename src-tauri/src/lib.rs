@@ -1,6 +1,7 @@
 mod actions;
 mod cleanup;
 mod commands;
+mod health;
 mod metrics;
 mod os;
 mod processes;
@@ -400,6 +401,10 @@ pub fn run() {
             list_activity,
             undo_activity,
             clear_activity,
+            health::run_health_check,
+            health::set_power_plan,
+            health::restart_pc,
+            health::open_windows_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
