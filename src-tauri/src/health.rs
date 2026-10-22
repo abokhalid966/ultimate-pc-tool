@@ -738,7 +738,16 @@ fn disk_state(system: &str) -> DiskState {
     DiskState { drives, system }
 }
 
+/// Small volumes with a drive letter (an OEM recovery partition, a tool's boot partition) are
+/// full by design and nothing to act on.
+fn is_utility_volume(d: &DriveSpace) -> bool {
+    d.total < 4 * GB || d.label.to_lowercase().contains("recovery")
+}
+
 fn drive_issue(d: &DriveSpace, is_system: bool) -> Option<HealthIssue> {
+    if !is_system && is_utility_volume(d) {
+        return None;
+    }
     let free_pct = d.available as f64 / d.total.max(1) as f64 * 100.0;
     let severity = if is_system {
         if d.available < 5 * GB || free_pct < 5.0 {
@@ -1009,6 +1018,8 @@ fn analyze_temp(report: Option<Result<CleanReport, String>>, system_low: bool, o
 const BALANCED: &str = "381b4222-f694-41f0-9685-ff5bb260df2e";
 const HIGH_PERFORMANCE: &str = "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c";
 const POWER_SAVER: &str = "a1841308-3541-4fab-bc81-f71556f20b4a";
+/// Windows 11's "Best power efficiency" power mode (an overlay on the Balanced plan).
+const BEST_EFFICIENCY_MODE: &str = "961cc777-2547-4f9d-8174-7d86181b8a7a";
 
 #[derive(Clone, Debug, PartialEq)]
 struct PowerPlan {
@@ -1037,6 +1048,9 @@ struct PowerState {
     plans: Vec<PowerPlan>,
     on_battery: Option<bool>,
     battery_saver: bool,
+    /// The power mode slider (Settings > Power) is on "Best power efficiency" for the current
+    /// power source. Many laptops have no Power saver plan, only this.
+    efficiency_mode: bool,
 }
 
 fn is_guid(s: &str) -> bool {
@@ -1101,10 +1115,29 @@ fn battery_status() -> (Option<bool>, bool) {
     (None, false)
 }
 
+/// The power mode overlay Windows applies for the current power source (read only).
+#[cfg(windows)]
+fn power_mode_overlay(on_battery: bool) -> Option<String> {
+    use winreg::RegKey;
+    use winreg::enums::{HKEY_LOCAL_MACHINE, KEY_READ};
+
+    let key = RegKey::predef(HKEY_LOCAL_MACHINE)
+        .open_subkey_with_flags(r"SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes", KEY_READ)
+        .ok()?;
+    let value = if on_battery { "ActiveOverlayDcPowerScheme" } else { "ActiveOverlayAcPowerScheme" };
+    key.get_value::<String, _>(value).ok().map(|guid| guid.trim().to_ascii_lowercase())
+}
+
+#[cfg(not(windows))]
+fn power_mode_overlay(_on_battery: bool) -> Option<String> {
+    None
+}
+
 fn power_state() -> Option<PowerState> {
     let plans = power_plans().ok()?;
     let (on_battery, battery_saver) = battery_status();
-    Some(PowerState { plans, on_battery, battery_saver })
+    let efficiency_mode = power_mode_overlay(on_battery == Some(true)).is_some_and(|guid| guid == BEST_EFFICIENCY_MODE);
+    Some(PowerState { plans, on_battery, battery_saver, efficiency_mode })
 }
 
 fn analyze_power(state: Option<&PowerState>, out: &mut Findings) {
@@ -1146,6 +1179,27 @@ fn analyze_power(state: Option<&PowerState>, out: &mut Findings) {
             (None, None) => issue = issue.fix(FixAction::settings("Open power settings", "powersleep")),
         }
         found.push(issue);
+    } else if state.efficiency_mode {
+        let mut explanation = "This power mode tells Windows to slow your processor down to save energy, so everything takes longer. In Windows Settings, under Power mode, choose Balanced, or Best performance when you need full speed.".to_string();
+        if on_battery {
+            explanation.push_str(" You're on battery right now, so it does help the battery last longer.");
+        }
+        found.push(
+            HealthIssue::new(
+                "power-mode",
+                if on_battery { Severity::Tip } else { Severity::Warning },
+                60,
+                "Your PC is set to Best power efficiency",
+                explanation,
+                format!(
+                    "Power mode overlay {BEST_EFFICIENCY_MODE} is active {}. Power plan: {} ({}).",
+                    if on_battery { "on battery" } else { "while plugged in" },
+                    active.label(),
+                    active.guid
+                ),
+            )
+            .fix(FixAction::settings("Open power settings", "powersleep")),
+        );
     } else if state.battery_saver {
         found.push(
             HealthIssue::new(
@@ -1656,6 +1710,10 @@ mod tests {
         // A big data drive with plenty of room left isn't flagged at 8% free.
         assert!(drive_issue(&drive("D:", 4000 * GB, 320 * GB), false).is_none());
         assert_eq!(drive_issue(&drive("D:", 1000 * GB, 30 * GB), false).unwrap().severity, Severity::Warning);
+        // Recovery and other small utility partitions are full by design.
+        assert!(drive_issue(&drive("E:", 2 * GB, 100 * MB), false).is_none());
+        let recovery = DriveSpace { label: "RECOVERY".into(), ..drive("R:", 20 * GB, GB) };
+        assert!(drive_issue(&recovery, false).is_none());
 
         let mut out = Findings::default();
         assert!(analyze_drives(Some(&[drive("C:", 500 * GB, 4 * GB), drive("D:", 1000 * GB, 500 * GB)]), "C:", &mut out));
@@ -1690,6 +1748,7 @@ mod tests {
             plans: vec![plan(BALANCED, false), plan(HIGH_PERFORMANCE, false), plan(POWER_SAVER, true)],
             on_battery: Some(false),
             battery_saver: false,
+            efficiency_mode: false,
         };
         let mut out = Findings::default();
         analyze_power(Some(&state), &mut out);
@@ -1710,6 +1769,14 @@ mod tests {
         analyze_power(Some(&balanced), &mut out);
         assert!(out.issues.is_empty());
         assert_eq!(out.checks[0].summary, "Balanced.");
+
+        // Laptops without a Power saver plan slow down through the power mode instead.
+        let efficient = PowerState { efficiency_mode: true, ..balanced };
+        let mut out = Findings::default();
+        analyze_power(Some(&efficient), &mut out);
+        assert_eq!(out.issues[0].id, "power-mode");
+        assert_eq!(out.issues[0].severity, Severity::Warning);
+        assert!(matches!(out.issues[0].action.as_ref().unwrap().kind, ActionKind::OpenSettings { page: "powersleep" }));
     }
 
     #[test]

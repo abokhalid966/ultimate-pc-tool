@@ -59,6 +59,13 @@ const { chromium } = require(process.env.PLAYWRIGHT_PATH || "/opt/node22/lib/nod
   await shot("24-palette-empty.png");
   await page.keyboard.press("Escape");
 
+  await go("PC health");
+  await page.click('button:has-text("Run speed check")');
+  await page.waitForTimeout(2200);
+  await shot("25-health-running.png");
+  await page.waitForTimeout(3500);
+  await shot("26-health-results.png");
+
   // Smallest window (minWidth 960 minus the window frame).
   await page.setViewportSize({ width: 944, height: 600 });
   for (const label of ["Dashboard", "Processes", "Startup apps", "Quick fixes"]) {

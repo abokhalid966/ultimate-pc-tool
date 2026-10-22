@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ChevronRight, CircleCheck, Clock, Cpu, HardDrive, ListTree, MemoryStick, Thermometer, TriangleAlert, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, CircleCheck, Clock, Cpu, HardDrive, HeartPulse, ListTree, MemoryStick, Thermometer, TriangleAlert, X } from "lucide-react";
 import { api, errorText, Metrics, ProcessInfo, SystemOverview } from "../api";
 import type { NavigateOptions } from "../App";
 import { useConfirm } from "../components/Confirm";
@@ -9,6 +9,7 @@ import { Sparkline } from "../components/Sparkline";
 import { useToast } from "../components/Toast";
 import { bytes, driveLabel, duration, longDuration, mountLabel, nameHue, pct, rate } from "../format";
 import { useEndProcesses } from "../hooks/useActions";
+import { currentScore, startHealthCheck, useHealthCheck } from "../hooks/useHealthCheck";
 import { MetricsState } from "../hooks/useMetrics";
 import { PageId } from ".";
 
@@ -212,6 +213,7 @@ function HealthSummary({
               : "Everything else looks healthy. Here's what we found and how to fix it:"}
           </p>
         </div>
+        <SpeedCheckLink onNavigate={onNavigate} />
       </div>
       {issues.length > 0 && (
         <ul className="health-issues">
@@ -234,6 +236,22 @@ function HealthSummary({
         </ul>
       )}
     </section>
+  );
+}
+
+/** Opens PC health: the full "Why is my PC slow?" check, started right away the first time. */
+function SpeedCheckLink({ onNavigate }: { onNavigate: Props["onNavigate"] }) {
+  const health = useHealthCheck();
+  const open = () => {
+    onNavigate("health");
+    if (!health.report) startHealthCheck();
+  };
+  return (
+    <button className="btn btn-sm" onClick={open} title="Find out why your PC is slow, and fix it">
+      <HeartPulse size={14} />
+      {health.running ? "Checking…" : health.report ? `Health score ${currentScore(health)}` : "Run speed check"}
+      <ChevronRight size={14} />
+    </button>
   );
 }
 

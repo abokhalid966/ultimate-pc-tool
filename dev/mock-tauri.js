@@ -125,6 +125,139 @@ window.__TAURI_INTERNALS__ = (() => {
   ];
   const settings = { closeAction: null };
 
+  // ---- PC health ----
+  // Matches the rest of the mock: Chrome is busy, D: is nearly full (see metrics), six startup
+  // apps are on. Ending Chrome, cleaning temp files or switching the power plan clears that issue
+  // on the next check. `window.__MOCK_HEALTH__ = "clear"` (set before load) reports no issues,
+  // and "restart" adds updates waiting on a restart.
+  const PLANS = {
+    "381b4222-f694-41f0-9685-ff5bb260df2e": "Balanced",
+    "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c": "High performance",
+    "a1841308-3541-4fab-bc81-f71556f20b4a": "Power saver",
+  };
+  const [BALANCED, HIGH_PERF, POWER_SAVER] = Object.keys(PLANS);
+  let powerPlan = POWER_SAVER;
+  let tempCleaned = false;
+  let healthRunning = false;
+  const fix = (label, kind, payload, safe = false) => ({ label, safe, kind, ...(payload ? { payload } : {}) });
+  const issue = (id, severity, title, explanation, detail, action, alternatives = []) => ({
+    id,
+    severity,
+    title,
+    explanation,
+    detail,
+    points: { critical: 20, warning: 10, tip: 3 }[severity],
+    action,
+    alternatives,
+  });
+  const healthReport = () => {
+    const clear = window.__MOCK_HEALTH__ === "clear";
+    if (clear) powerPlan = BALANCED;
+    const issues = [];
+    const checks = [];
+    const check = (id, label, found, issueSummary, ok) => checks.push({ id, label, status: found ? "issue" : "ok", summary: found ? issueSummary : ok });
+
+    const chrome = clear ? [] : procs.filter((p) => p.name === "chrome.exe");
+    if (chrome.length) {
+      issues.push(
+        issue(
+          "cpu-chrome.exe",
+          "critical",
+          "Google Chrome is keeping your processor busy",
+          "It used about 54% of your processor the whole time we watched, which leaves less for everything else. If you aren't using it, ending it frees that up right away. Save your work in it first.",
+          `chrome.exe: ${chrome.length} processes, average 54.3% of the processor over 4 seconds (samples: 51%, 58%, 55%, 53%). File: ${chrome[0].exe}`,
+          fix("End Google Chrome", "endProcess", { name: "chrome.exe", targets: chrome.map(({ pid, startTime }) => ({ pid, startTime })) }),
+          [fix("See in Processes", "openPage", { page: "processes", sort: "cpu", query: "chrome.exe" })],
+        ),
+      );
+    }
+    check("processor", "Processor", chrome.length, "Google Chrome is keeping your processor busy", "No app is hogging it. It averaged 23% during the check.");
+    check("memory", "Memory", false, "", "44% in use (14.2 GB of 32 GB).");
+
+    if (!clear) {
+      issues.push(
+        issue(
+          "drive-d",
+          "warning",
+          "Drive D: is almost full",
+          "Only 90 GB of 1.95 TB is free, so apps may fail to save files there. Move or delete files you don't need.",
+          "Data (D:): 90 GB free of 1.95 TB (4.5% free).",
+          fix("Open Storage settings", "openSettings", { page: "storagesense" }),
+        ),
+      );
+    }
+    check("drives", "Free space", !clear, "Drive D: is almost full", "Every drive has room. C: has 380 GB free.");
+
+    const on = startup.filter((i) => i.enabled);
+    if (!clear && on.length >= 6) {
+      issues.push(
+        issue(
+          "startup",
+          on.length >= 10 ? "warning" : "tip",
+          `${on.length} apps start with Windows`,
+          "Every app that starts with Windows makes signing in slower and keeps running in the background, using memory and processor. Turn off the ones you don't need right away. You can still open them yourself, and turning one off never deletes it.",
+          `Turned on: ${on.map((i) => i.name).join(", ")}. Already turned off: ${startup.length - on.length}.`,
+          fix("Choose startup apps", "openPage", { page: "startup", sort: null, query: null }),
+        ),
+      );
+    }
+    check("startup", "Startup apps", !clear && on.length >= 6, `${on.length} apps start with Windows.`, `${on.length} apps start with Windows.`);
+    const updates = window.__MOCK_HEALTH__ === "restart";
+    if (updates) {
+      issues.push(
+        issue(
+          "updates-restart",
+          "warning",
+          "Restart to finish installing updates",
+          "Windows has installed updates that only take effect after a restart. Until then, update work can keep running in the background and slow your PC down.",
+          "Running for 1 day, 2 hours since the last restart. Waiting for a restart: Windows Update RebootRequired, 3 PendingFileRenameOperations.",
+          fix("Restart now…", "restart"),
+          [fix("Open Windows Update", "openSettings", { page: "windowsupdate" })],
+        ),
+      );
+    }
+    check("restart", "Restart", false, "", "Last restarted 1 day, 2 hours ago.");
+    check("updates", "Windows Update", updates, "Updates are waiting for a restart.", "No updates are waiting for a restart.");
+
+    const temp = !clear && !tempCleaned;
+    if (temp) {
+      issues.push(
+        issue(
+          "temp-files",
+          "warning",
+          "1.21 GB of temporary files can be cleaned up",
+          "Apps and installers leave temporary files behind. Cleaning them frees space on your Windows drive. Files used in the last 24 hours and files that are in use are always kept, and nothing outside the temp folder is touched.",
+          "1873 files older than 24 hours in C:\\Users\\abokhalid\\AppData\\Local\\Temp (1.21 GB).",
+          fix("Free 1.21 GB", "cleanTemp", { bytes: 1.3e9 }, true),
+        ),
+      );
+    }
+    check("temp", "Temp files", temp, "1.21 GB can be freed.", "Already clean.");
+
+    const saver = !clear && powerPlan === POWER_SAVER;
+    if (saver) {
+      issues.push(
+        issue(
+          "power-plan",
+          "warning",
+          "Your PC is set to Power saver",
+          "Power saver makes your processor run slower to save energy, so everything takes longer. Balanced is just as frugal while your PC is idle, and runs at full speed when you need it.",
+          `Active power plan: Power saver (${POWER_SAVER}). Plans on this PC: Balanced, High performance, Power saver.`,
+          fix("Switch to Balanced", "setPowerPlan", { guid: BALANCED, name: "Balanced" }, true),
+          [fix("Use High performance", "setPowerPlan", { guid: HIGH_PERF, name: "High performance" }, true)],
+        ),
+      );
+    }
+    check("power", "Power plan", saver, "Your PC is set to Power saver", `${PLANS[powerPlan]}.`);
+    check("temperature", "Temperature", false, "", "CPU Package at 61°C.");
+    check("systemDrive", "Windows drive", false, "", "C: is a fast solid-state drive (SSD).");
+
+    const rank = { critical: 0, warning: 1, tip: 2 };
+    issues.sort((a, b) => rank[a.severity] - rank[b.severity]);
+    const score = Math.max(0, 100 - issues.reduce((sum, i) => sum + i.points, 0));
+    return { score, issues, checks, checkedAt: Date.now(), durationMs: 4630 };
+  };
+
   const handlers = {
     get_app_info: () => ({ elevated: !!window.__MOCK_ELEVATED__, version: "0.1.0" }),
     restart_as_admin: () => fail("You chose No on the administrator prompt, so the app keeps running as before."),
@@ -222,7 +355,10 @@ window.__TAURI_INTERNALS__ = (() => {
     },
     clean_temp: async ({ dryRun }) => {
       await sleep(400);
-      if (!dryRun) record("Cleanup", "Cleaned temp files: 1873 files, 1240 MB freed", "C:\\Users\\abokhalid\\AppData\\Local\\Temp");
+      if (!dryRun) {
+        record("Cleanup", "Cleaned temp files: 1873 files, 1240 MB freed", "C:\\Users\\abokhalid\\AppData\\Local\\Temp");
+        tempCleaned = true;
+      }
       return { folder: "C:\\Users\\abokhalid\\AppData\\Local\\Temp", files: 1873, bytes: 1.3e9, skipped: dryRun ? 0 : 41 };
     },
 
@@ -273,11 +409,52 @@ window.__TAURI_INTERNALS__ = (() => {
       record("Startup", `${enabled ? "Enabled" : "Disabled"} startup app "${name}"`, null, { type: "startupToggle", source, name, enabled: !enabled });
     },
 
+    run_health_check: async ({ onEvent }) => {
+      if (healthRunning) fail("A speed check is already running. It takes about five seconds.");
+      healthRunning = true;
+      try {
+        const steps = [
+          [2, "Getting ready…"],
+          [6, "Watching which apps use your processor…"],
+          [26, "Measuring how full your memory is…"],
+          [46, "Checking free space on your drives…"],
+          [66, "Looking for updates waiting on a restart…"],
+          [86, "Checking startup apps, temp files and power settings…"],
+        ];
+        for (const [percent, step] of steps) {
+          send(onEvent, { type: "progress", percent, step });
+          await sleep(percent === 2 ? 150 : 900);
+        }
+        send(onEvent, { type: "progress", percent: 100, step: "Done" });
+        return healthReport();
+      } finally {
+        healthRunning = false;
+      }
+    },
+    set_power_plan: async ({ guid }) => {
+      await sleep(250);
+      if (!PLANS[guid]) fail("That power plan isn't on this PC any more. Run the check again.");
+      if (guid === powerPlan) return null;
+      const previous = powerPlan;
+      powerPlan = guid;
+      return record("PC health", `Switched power plan to ${PLANS[guid]}`, `Was ${PLANS[previous]} (${previous})`, { type: "powerPlan", guid: previous, name: PLANS[previous] });
+    },
+    restart_pc: async () => {
+      calls.push({ cmd: "restart_pc" });
+      await sleep(300);
+      record("PC health", "Restarted the PC");
+    },
+    open_windows_settings: ({ page }) => {
+      calls.push({ cmd: "open_windows_settings", page });
+      if (!["windowsupdate", "storagesense", "powersleep", "batterysaver"].includes(page)) fail("Unknown Windows Settings page.");
+    },
+
     list_activity: () => activity,
     undo_activity: ({ id }) => {
       const r = activity.find((a) => a.id === id);
       if (!r) fail("Activity entry not found");
       if (r.undo?.type === "restoreCommand") commands.push(r.undo.command);
+      if (r.undo?.type === "powerPlan") powerPlan = r.undo.guid;
       r.undone = true;
     },
     clear_activity: () => {

@@ -1,0 +1,604 @@
+/* =====================================================================
+   PC health (src/pages/Health.tsx). Uses the design tokens in styles.css;
+   every class starts with hc- so it can't clash with the Dashboard's
+   "health" strip.
+   ===================================================================== */
+
+.hc-last {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* ---- Hero: score ring + verdict ---- */
+
+.hc-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 24px 28px;
+  overflow: hidden;
+}
+/* A soft glow in the score's color behind the ring. */
+.hc-hero::before {
+  content: "";
+  position: absolute;
+  left: -104px;
+  top: 50%;
+  width: 420px;
+  height: 420px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle closest-side, color-mix(in srgb, var(--hc-glow, var(--accent)) 15%, transparent) 0%, transparent 100%);
+  pointer-events: none;
+}
+.hc-hero.band-great {
+  --hc-glow: var(--ok);
+}
+.hc-hero.band-good {
+  --hc-glow: var(--accent);
+}
+.hc-hero.band-fair {
+  --hc-glow: var(--warn-fill);
+}
+.hc-hero.band-poor {
+  --hc-glow: var(--danger-fill);
+}
+.hc-hero > * {
+  position: relative;
+}
+.hc-hero-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.hc-eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.hc-was {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+.hc-hero-text h2 {
+  font: 600 24px/1.25 var(--font-display);
+  letter-spacing: -0.01em;
+}
+.hc-hero-text p {
+  color: var(--text-2);
+  max-width: 620px;
+}
+.hc-hero-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 10px;
+}
+.hc-hero-note {
+  color: var(--text-3);
+  font-size: 12px;
+}
+.hc-cta {
+  height: 40px;
+  padding: 0 20px;
+  font-size: 15px;
+  border-radius: var(--radius);
+}
+.hc-step {
+  min-height: 20px;
+  color: var(--text) !important;
+}
+
+/* The big ring. */
+.hc-ring {
+  position: relative;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+}
+.hc-ring svg {
+  display: block;
+  transform: rotate(-90deg);
+}
+.hc-ring-track {
+  stroke: var(--track);
+}
+.hc-ring.mode-idle .hc-ring-track {
+  stroke-dasharray: 3 7;
+  stroke: color-mix(in srgb, var(--accent) 35%, var(--track));
+}
+.hc-ring-value {
+  transition: stroke 0.4s;
+}
+.hc-ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.hc-ring.mode-idle .hc-ring-center {
+  color: var(--accent-text);
+}
+.hc-ring.mode-progress .hc-ring-center svg {
+  color: var(--accent-text);
+}
+.hc-ring-num {
+  font: 600 46px/1 var(--font-display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.hc-ring-num small {
+  font-size: 20px;
+  font-weight: 600;
+  margin-left: 1px;
+  color: var(--text-2);
+}
+.hc-ring-sub {
+  font-size: 12px;
+  color: var(--text-3);
+}
+.hc-ring.mode-progress svg {
+  animation: hc-breathe 1.6s ease-in-out infinite;
+}
+@keyframes hc-breathe {
+  50% {
+    opacity: 0.82;
+  }
+}
+
+/* Severity tally under the verdict. */
+.hc-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.hc-tally {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--fill-subtle);
+  color: var(--text);
+}
+.hc-tally-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.hc-tally.tone-danger {
+  background: var(--danger-soft);
+}
+.hc-tally.tone-danger .hc-tally-dot {
+  color: var(--danger);
+}
+.hc-tally.tone-warn {
+  background: var(--warn-soft);
+}
+.hc-tally.tone-warn .hc-tally-dot {
+  color: var(--warn-fill);
+}
+.hc-tally.tone-tip {
+  background: var(--accent-soft);
+}
+.hc-tally.tone-tip .hc-tally-dot {
+  color: var(--accent);
+}
+.hc-tally.tone-ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+/* Live progress steps. */
+.hc-phases {
+  list-style: none;
+  margin: 8px 0 4px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.hc-phase {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px 0 4px;
+  border-radius: 999px;
+  border: 1px solid var(--card-stroke);
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 500;
+  transition:
+    color var(--dur),
+    background var(--dur),
+    border-color var(--dur);
+}
+.hc-phase-icon {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--fill-subtle);
+}
+.hc-phase.active {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: var(--accent-soft);
+}
+.hc-phase.active .hc-phase-icon {
+  background: var(--accent);
+  color: var(--on-accent);
+  animation: pulse 0.9s ease-in-out infinite alternate;
+}
+.hc-phase.done {
+  color: var(--text-2);
+}
+.hc-phase.done .hc-phase-icon {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+/* ---- Issue groups ---- */
+
+.hc-results {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  transition: opacity var(--dur);
+}
+.hc-results.is-busy {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.hc-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.hc-group-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.hc-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 600 16px/22px var(--font-display);
+}
+.hc-group-title > svg {
+  align-self: center;
+}
+.hc-group-title.tone-danger > svg {
+  color: var(--danger);
+}
+.hc-group-title.tone-warn > svg {
+  color: var(--warn);
+}
+.hc-group-title.tone-tip > svg {
+  color: var(--accent-text);
+}
+.hc-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--fill-subtle);
+  color: var(--text-2);
+  font: 600 12px/1 var(--font);
+}
+.hc-group-hint {
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.hc-issue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.hc-issue {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 210px;
+  align-items: start;
+  gap: 4px 16px;
+  padding: 16px 18px;
+  transition:
+    border-color var(--dur),
+    background var(--dur);
+}
+.hc-issue:hover {
+  border-color: var(--control-stroke);
+}
+.hc-issue-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--fill-subtle);
+  color: var(--text-2);
+}
+.hc-issue.tone-danger .hc-issue-icon {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.hc-issue.tone-warn .hc-issue-icon {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.hc-issue.tone-tip .hc-issue-icon {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.hc-issue.is-fixed .hc-issue-icon {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+.hc-issue.is-fixed .hc-issue-title h3,
+.hc-issue.is-fixed .hc-issue-text {
+  color: var(--text-3);
+}
+.hc-issue-body {
+  min-width: 0;
+  padding-top: 1px;
+}
+.hc-issue-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+.hc-issue-title h3 {
+  font-size: 15px;
+  line-height: 22px;
+}
+.hc-points {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  background: var(--ok-soft);
+  color: var(--ok);
+  cursor: default;
+}
+.hc-issue-text {
+  margin-top: 2px;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 760px;
+  user-select: text;
+}
+.hc-details-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 2px 6px 2px 2px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.hc-details-toggle:hover {
+  color: var(--text);
+  background: var(--fill-subtle);
+}
+.hc-details-toggle svg {
+  transition: transform var(--dur) var(--ease);
+  transform: rotate(-90deg);
+}
+.hc-details-toggle svg.open {
+  transform: none;
+}
+.hc-issue-detail {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--inset);
+  border: 1px solid var(--card-stroke);
+  color: var(--text-2);
+  font: 12px/1.55 var(--mono);
+  word-break: break-word;
+  max-width: 760px;
+}
+.hc-issue-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  min-width: 0;
+}
+/* Long labels ("End Microsoft Edge WebView2") wrap instead of overflowing. */
+.hc-issue-actions .btn {
+  justify-content: center;
+  white-space: normal;
+  text-align: center;
+  height: auto;
+  min-height: 32px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  line-height: 18px;
+}
+.hc-issue-actions .btn.btn-sm {
+  min-height: 28px;
+}
+.hc-issue-actions .hc-alt {
+  background: transparent;
+  border-color: transparent;
+  color: var(--accent-text);
+}
+.hc-issue-actions .hc-alt:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+.hc-issue-actions .hc-fixed-pill {
+  align-self: stretch;
+  justify-content: center;
+  width: auto;
+  height: 28px;
+  font-size: 13px;
+}
+.hc-issue-skeleton {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+@container (max-width: 760px) {
+  .hc-hero {
+    gap: 22px;
+    padding: 20px 22px;
+  }
+  .hc-ring {
+    zoom: 0.8;
+  }
+  .hc-hero-text h2 {
+    font-size: 21px;
+  }
+  .hc-issue {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .hc-issue-actions {
+    grid-column: 2;
+    flex-direction: row;
+    flex-wrap: wrap;
+    min-width: 0;
+    margin-top: 10px;
+  }
+}
+
+@container (max-width: 540px) {
+  .hc-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* ---- What we checked / what we look at ---- */
+
+.hc-check-list,
+.hc-feature-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 4px 20px;
+}
+.hc-check,
+.hc-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--fill-subtle);
+  min-width: 0;
+}
+.hc-check > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.hc-check.status-ok > svg {
+  color: var(--ok);
+}
+.hc-check.status-issue > svg {
+  color: var(--warn);
+}
+.hc-check.status-skipped > svg {
+  color: var(--text-3);
+}
+.hc-check > div,
+.hc-feature > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.hc-check strong,
+.hc-feature strong {
+  font-weight: 600;
+  font-size: 13px;
+}
+.hc-check span,
+.hc-feature span {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-2);
+  user-select: text;
+}
+.hc-check.status-skipped strong {
+  color: var(--text-2);
+}
+.hc-feature-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent-text) !important;
+}
+
+/* ---- "Fix all safe items" dialog ---- */
+
+.hc-fixall-list {
+  list-style: none;
+  margin: 10px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.hc-fixall-list li {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--fill-subtle-2);
+  border: 1px solid var(--card-stroke);
+}
+.hc-fixall-list strong {
+  font-weight: 600;
+}
+.hc-fixall-list span {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hc-ring.mode-progress svg,
+  .hc-phase.active .hc-phase-icon {
+    animation: none;
+  }
+}
