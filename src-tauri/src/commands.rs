@@ -303,7 +303,7 @@ pub fn run(runs: &Runs, run_id: &str, command: &str, shell: Shell, admin: bool, 
         return run_elevated(command, shell);
     }
 
-    let mut cmd = match shell {
+    let cmd = match shell {
         Shell::Powershell => {
             let mut c = Command::new(os::powershell_exe());
             // Force UTF-8 so non-English output isn't garbled.
@@ -317,10 +317,24 @@ pub fn run(runs: &Runs, run_id: &str, command: &str, shell: Shell, admin: bool, 
         }
         Shell::Cmd => cmd_command(command),
     };
+    run_program(runs, run_id, cmd, shell.label(), RUN_TIMEOUT, events)
+}
+
+/// Runs a program directly (no shell) the same way: in a job object, with live output through
+/// `events`, stoppable with `Runs::cancel(run_id)`, and stopped after `timeout`. `what` names the
+/// program in the error shown when it can't start.
+pub fn run_program(
+    runs: &Runs,
+    run_id: &str,
+    mut cmd: Command,
+    what: &str,
+    timeout: Duration,
+    events: Channel<RunEvent>,
+) -> Result<CommandOutput, String> {
     cmd.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
 
     let job = Job::new();
-    let mut child = hidden(&mut cmd).spawn().map_err(|e| format!("Couldn't start {}: {e}", shell.label()))?;
+    let mut child = hidden(&mut cmd).spawn().map_err(|e| format!("Couldn't start {what}: {e}"))?;
     if let Some(job) = &job {
         job.assign(&child);
     }
@@ -344,7 +358,7 @@ pub fn run(runs: &Runs, run_id: &str, command: &str, shell: Shell, admin: bool, 
         }
         if cancel.load(Ordering::SeqCst) {
             stopped = Some(StopReason::Cancelled);
-        } else if started.elapsed() > RUN_TIMEOUT {
+        } else if started.elapsed() > timeout {
             stopped = Some(StopReason::TimedOut);
         }
         if stopped.is_some() {

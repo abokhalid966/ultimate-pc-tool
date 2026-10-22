@@ -11,7 +11,7 @@ type CloseChoice = CloseAction | "ask";
 
 const SHORTCUTS: [string[], string][] = [
   [["Ctrl", "K"], "Search pages, fixes and apps, or run a command"],
-  [["Ctrl", "1…7"], "Go to a page in the sidebar"],
+  [["Ctrl", "1…9"], "Go to a page in the sidebar"],
   [["F5"], "Refresh the current page"],
   [["Ctrl", "Shift", "T"], "New terminal tab"],
   [["Delete"], "End the selected process (asks first)"],

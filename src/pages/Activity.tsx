@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { Brush, CircleX, Gauge, HeartPulse, History, LucideIcon, Power, RefreshCw, Trash2, Undo2, Zap } from "lucide-react";
+import { Brush, CircleX, Gauge, HeartPulse, History, LayoutGrid, LucideIcon, Power, RefreshCw, Trash2, Undo2, Zap } from "lucide-react";
 import { ActionRecord, ADMIN_SOURCES, api, errorText, Undo } from "../api";
 import { useConfirm } from "../components/Confirm";
 import { EmptyState, ErrorState } from "../components/EmptyState";
@@ -20,6 +20,7 @@ const LOOKS: Record<string, { icon: LucideIcon; color: string }> = {
   commands: { icon: Zap, color: "var(--cat-apps)" },
   cleanup: { icon: Brush, color: "var(--cat-cleanup)" },
   "pc health": { icon: HeartPulse, color: "var(--cat-repair)" },
+  apps: { icon: LayoutGrid, color: "var(--cat-apps)" },
 };
 const lookFor = (category: string) => LOOKS[category.toLowerCase()] ?? { icon: Gauge, color: "var(--text-2)" };
 

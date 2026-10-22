@@ -1,0 +1,539 @@
+/* =====================================================================
+   Apps page (installed apps, updates, fresh-install toolkit).
+   Only design tokens from styles.css, so both themes follow automatically.
+   ===================================================================== */
+
+.apps-page {
+  gap: 16px;
+}
+
+.apps-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 34px;
+}
+.apps-bar .segmented button {
+  height: 28px;
+}
+.seg-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+  background: var(--fill-subtle);
+}
+.seg-count.accent {
+  color: var(--on-accent);
+  background: var(--accent);
+}
+.seg-spinner {
+  width: 12px;
+  height: 12px;
+  color: var(--accent-text);
+}
+.apps-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-2);
+  margin-right: 4px;
+}
+.apps-hint .spinner {
+  width: 12px;
+  height: 12px;
+}
+/* Narrow windows: the toolbar keeps one line by dropping button labels. */
+@container (max-width: 760px) {
+  .apps-wide-only {
+    display: none;
+  }
+  .apps-bar .search {
+    width: 180px;
+  }
+}
+
+/* ---- Tables ---- */
+
+.apps-table-wrap {
+  flex: 1;
+}
+.apps-col-publisher {
+  width: 22%;
+}
+.apps-col-size {
+  width: 116px;
+}
+.apps-col-date {
+  width: 128px;
+}
+.apps-col-actions {
+  width: 172px;
+}
+.apps-col-version {
+  width: 34%;
+}
+.apps-col-source {
+  width: 128px;
+}
+.apps-table td.apps-col-date {
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.apps-table td {
+  height: 52px;
+}
+@container (max-width: 860px) {
+  .apps-col-publisher,
+  .apps-col-source {
+    display: none;
+  }
+}
+@container (max-width: 620px) {
+  .apps-col-date {
+    display: none;
+  }
+  .apps-col-version {
+    width: 40%;
+  }
+}
+
+.apps-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.apps-name-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.apps-name-line strong {
+  font-weight: 600;
+  min-width: 0;
+}
+.apps-meta {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-3);
+}
+.apps-meta.mono {
+  font-size: 11.5px;
+}
+
+.apps-size {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.apps-size-bar {
+  display: block;
+  width: 64px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--track);
+  overflow: hidden;
+}
+.apps-size-bar > span {
+  display: block;
+  height: 100%;
+  margin-left: auto;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--chart-mem) 80%, transparent);
+}
+
+.apps-version {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+.apps-version > span {
+  color: var(--text-2);
+}
+.apps-version strong {
+  font-weight: 600;
+  color: var(--accent-text);
+}
+.apps-version svg {
+  flex-shrink: 0;
+}
+
+.apps-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+}
+.apps-uninstall svg {
+  color: var(--text-2);
+}
+.apps-uninstall:hover:not(:disabled) {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--control-stroke));
+}
+.apps-uninstall:hover:not(:disabled) svg {
+  color: var(--danger);
+}
+.table tbody tr.apps-row-busy td {
+  background: var(--accent-soft);
+}
+
+.job-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-text);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.job-live .spinner {
+  width: 12px;
+  height: 12px;
+}
+.job-live-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.apps-table-intro {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--card-stroke);
+  user-select: text;
+}
+.apps-checking {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--accent-text);
+  background: var(--accent-soft);
+  border-bottom: 1px solid var(--card-stroke);
+}
+
+.apps-state-card {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 0;
+}
+
+/* Details in dialogs */
+.apps-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px 16px;
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--fill-subtle-2);
+  border: 1px solid var(--fill-subtle);
+  font-size: 13px;
+}
+.apps-facts:empty {
+  display: none;
+}
+.apps-facts dt {
+  color: var(--text-2);
+}
+.apps-facts dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.apps-confirm-list {
+  margin: 10px 0;
+  padding: 8px 12px 8px 28px;
+  border-radius: var(--radius-sm);
+  background: var(--fill-subtle-2);
+  border: 1px solid var(--fill-subtle);
+  font-size: 13px;
+  line-height: 22px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+/* ---- Queue panel (live progress, then a summary) ---- */
+
+.queue-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  animation: page-in 200ms var(--ease);
+}
+.queue-panel.active {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--card-stroke));
+  box-shadow:
+    var(--shadow-card),
+    inset 3px 0 0 var(--accent);
+}
+.queue-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.queue-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.queue-title strong {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.queue-step {
+  margin-left: 4px;
+  font-weight: 400;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.queue-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+.queue-icon.ok {
+  color: var(--ok);
+  background: var(--ok-soft);
+}
+.queue-icon.warn {
+  color: var(--warn);
+  background: var(--warn-soft);
+}
+.queue-icon.bad {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+.queue-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--track);
+  overflow: hidden;
+}
+.queue-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width 0.35s var(--ease);
+}
+.queue-panel .progress {
+  height: 6px;
+  border-radius: 3px;
+}
+.queue-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  margin-bottom: -4px;
+}
+.queue-line {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: text;
+}
+.queue-log {
+  flex: 0 0 auto;
+  min-height: 80px;
+  max-height: 220px;
+}
+.chev.open-down {
+  transform: rotate(180deg);
+}
+.queue-failures {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--card-stroke);
+}
+.queue-failures li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0 0;
+}
+.queue-failures li + li {
+  margin-top: 10px;
+  border-top: 1px solid var(--fill-subtle);
+}
+.queue-failures li > svg {
+  flex-shrink: 0;
+}
+.queue-failure-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+}
+
+/* ---- Fresh-install toolkit ---- */
+
+.app-avatar.md {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius);
+  font-size: 14px;
+}
+
+.kit-scroll {
+  margin-right: -10px;
+  padding-right: 10px;
+}
+.kit-section {
+  margin-bottom: 22px;
+}
+.kit-section:last-child {
+  margin-bottom: 4px;
+}
+.kit-section-icon {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-xs);
+  color: var(--cat, var(--accent-text));
+  background: color-mix(in srgb, var(--cat, var(--accent)) 15%, transparent);
+}
+.kit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+}
+.kit-card {
+  display: grid;
+  grid-template-columns: 16px 32px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--card);
+  border: 1px solid var(--card-stroke);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast),
+    border-color var(--dur-fast),
+    box-shadow var(--dur-fast);
+}
+.kit-card input {
+  width: 16px;
+  height: 16px;
+  margin: 8px 0 0;
+  cursor: pointer;
+}
+.kit-card:hover {
+  background: var(--card-hover);
+  box-shadow: var(--shadow-raised);
+}
+.kit-card.selected {
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--card-stroke));
+  background: color-mix(in srgb, var(--accent) 7%, var(--card));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.kit-card.locked {
+  cursor: default;
+}
+.kit-card.locked:hover {
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+}
+.kit-card.locked input {
+  cursor: default;
+  opacity: 0.45;
+}
+.kit-card:has(input:focus-visible) {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+}
+.kit-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.kit-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  min-height: 20px;
+}
+.kit-name strong {
+  font-weight: 600;
+}
+.kit-desc {
+  font-size: 12.5px;
+  line-height: 17px;
+  color: var(--text-2);
+}
+.kit-note {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--warn);
+}
+
+.kit-actionbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  min-height: 56px;
+  padding: 10px 12px 10px 18px;
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  border: 1px solid var(--card-stroke);
+  box-shadow: var(--shadow-raised);
+  transition: border-color var(--dur);
+}
+.kit-actionbar.has-picks {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--card-stroke));
+}
+.kit-picks {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 13px;
+}
+.kit-picks strong {
+  font-weight: 600;
+  white-space: nowrap;
+}

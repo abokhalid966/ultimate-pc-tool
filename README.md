@@ -14,6 +14,7 @@ Built with [Tauri 2](https://tauri.app) (Rust) and React + TypeScript. The insta
 | **Quick fixes** | Library of one-click fixes (flush DNS, SFC, DISM, winget upgrades...) plus your own commands with `{variables}`, optionally run as administrator |
 | **Terminal** | Real PowerShell, Command Prompt and WSL tabs inside the app |
 | **Startup apps** | Turn apps on or off at Windows startup, using the same mechanism as Task Manager |
+| **Apps** | Every installed app with its size and install date, and an Uninstall button that runs the app's own uninstaller; app updates through winget (one at a time or all at once, with live progress); and a Fresh-install toolkit to install popular apps in one go |
 | **Activity** | A log of every change the app made, with undo for startup changes, priority changes and deleted commands |
 | **Command palette** | Ctrl+K anywhere: jump to a page, run a saved command, `kill chrome`, or `>` followed by any command to run it in the terminal |
 | **Tray** | Closing the window can keep the app in the tray (it asks the first time), with CPU/RAM in the tooltip |
@@ -46,6 +47,7 @@ src/                 React UI
   styles.css         Design tokens (light and dark) and all styles
   theme.ts           Follows the Windows light/dark setting, or the choice in Settings
   api.ts             Typed wrappers around the Rust commands
+  data/appCatalog.ts The Fresh-install toolkit's app list
 src-tauri/src/
   metrics.rs         1-second sampler for system stats and the process table
   health.rs          PC health speed check, power plan switch, restart
@@ -53,6 +55,8 @@ src-tauri/src/
   commands.rs        Saved command library and command runner
   terminal.rs        Pseudo-console terminal sessions
   startup.rs         Startup apps (registry + startup folders)
+  apps.rs            Installed apps (Uninstall registry keys) and uninstalling
+  winget.rs          winget updates and installs, with table parsing in winget/table.rs
   actions.rs         Activity log and undo
   tray.rs            Tray icon and live tooltip
 ```

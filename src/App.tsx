@@ -14,6 +14,7 @@ import { REFRESH_EVENT } from "./hooks/useRefresh";
 import { RunsProvider } from "./hooks/useRuns";
 import { PAGES, PageId, SECTIONS } from "./pages";
 import { Activity } from "./pages/Activity";
+import { Apps } from "./pages/Apps";
 import { Commands, PendingRun } from "./pages/Commands";
 import { Dashboard } from "./pages/Dashboard";
 import { Health } from "./pages/Health";
@@ -235,6 +236,7 @@ function AppShell() {
             />
           </div>
           {page === "startup" && <Startup elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} />}
+          {page === "apps" && <Apps elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} />}
           {page === "activity" && <Activity elevated={appInfo.elevated} />}
           {page === "settings" && <Settings appInfo={appInfo} onRestartAsAdmin={restartAsAdmin} />}
         </main>
