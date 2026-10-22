@@ -1,7 +1,7 @@
 // Unit tests for the Storage page's treemap layout. Run with `pnpm test`.
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { squarify } from "../src/pages/storage/treemap.ts";
+import { squarify } from "../src/pages/storage/squarify.ts";
 
 const bounds = { x: 0, y: 0, w: 600, h: 200 };
 const close = (a: number, b: number) => Math.abs(a - b) < 1e-6;

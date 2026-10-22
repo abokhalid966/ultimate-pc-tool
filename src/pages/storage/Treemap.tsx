@@ -1,6 +1,6 @@
 import { CSSProperties, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { bytes } from "../../format";
-import { squarify } from "./treemap";
+import { squarify } from "./squarify";
 
 export interface TreemapItem {
   key: string;
