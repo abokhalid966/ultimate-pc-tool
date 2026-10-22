@@ -164,6 +164,20 @@ struct Outcome {
     stopped_dependents: Vec<String>,
 }
 
+/// A stop that failed part way, after some services that need it had already been stopped.
+#[cfg_attr(not(windows), allow(dead_code))]
+struct StopFailed {
+    message: String,
+    /// Key names of the services that did stop, in the order they stopped.
+    stopped: Vec<String>,
+}
+
+impl From<String> for StopFailed {
+    fn from(message: String) -> Self {
+        StopFailed { message, stopped: Vec::new() }
+    }
+}
+
 /// Shown when a change fails because this app isn't running as administrator. The UI looks for
 /// "Restart as administrator" in errors to offer the button.
 #[cfg_attr(not(windows), allow(dead_code))]
@@ -496,7 +510,7 @@ fn assemble(raw: Raw, windir: &str) -> ServiceInfo {
         publisher: classify(raw.program.as_deref(), raw.company.as_deref(), windir),
         safety,
         safety_note,
-        can_stop: status == ServiceStatus::Running && raw.controls_accepted & SERVICE_ACCEPT_STOP != 0,
+        can_stop: matches!(status, ServiceStatus::Running | ServiceStatus::Paused) && raw.controls_accepted & SERVICE_ACCEPT_STOP != 0,
         shared_process: raw.service_type & SERVICE_WIN32_SHARE_PROCESS != 0,
         template,
         name: raw.name,
@@ -530,6 +544,10 @@ fn check_action(info: &ServiceInfo, action: ServiceAction) -> Result<(), String>
             }
             if action == ServiceAction::Restart && info.status == ServiceStatus::Stopped {
                 return Err(format!("{name} isn't running. Use Start instead."));
+            }
+            // It would stop, then fail to start again.
+            if action == ServiceAction::Restart && info.startup == Some(StartupType::Disabled) {
+                return Err(format!("{name} is disabled, so it couldn't start again after stopping. Set its startup type to Manual or Automatic first."));
             }
             Ok(())
         }
@@ -579,16 +597,32 @@ pub async fn control_service(app: AppHandle, name: String, action: ServiceAction
         let before = imp::get(&name)?;
         check_action(&before, action)?;
         let display = before.display_name.clone();
-        let log = |verb: &str, also: &[String], also_label: &str| {
+        // `parts` names other services affected, e.g. ("Also stopped", [...]); empty ones are left out.
+        let log = |description: String, parts: &[(&str, &[String])]| {
             let mut detail = format!("Service name: {name}");
-            if !also.is_empty() {
-                detail.push_str(&format!(". {also_label}: {}", also.join(", ")));
+            for (label, names) in parts.iter().filter(|(_, names)| !names.is_empty()) {
+                detail.push_str(&format!(". {label}: {}", names.join(", ")));
             }
-            app.state::<ActivityLog>().record(&app, "Services", format!("{verb} service \"{display}\""), Some(detail), None);
+            app.state::<ActivityLog>().record(&app, "Services", description, Some(detail), None);
         };
-        let finish = |outcome: Outcome, also: Vec<String>| {
-            let note = outcome.stopped_itself.then(|| {
-                format!("{display} started, then stopped again by itself. Some services do this when nothing needs them right now.")
+        let logged = |verb: &str, parts: &[(&str, &[String])]| log(format!("{verb} service \"{display}\""), parts);
+        // A stop that fails part way starts the services that already stopped with it again, so
+        // nothing is left half done. Any that won't start again are logged and named.
+        let stop = || {
+            imp::stop(&name, &display).map_err(|failed| {
+                let (_, left) = start_again(&failed.stopped);
+                if left.is_empty() {
+                    return failed.message;
+                }
+                log(format!("Stopped services that need \"{display}\""), &[("Still stopped", &left)]);
+                format!("{} These services that need it were stopped and didn't start again: {}.", failed.message, left.join(", "))
+            })
+        };
+        let finish = |outcome: &Outcome, also: Vec<String>, note: Option<String>| {
+            let note = note.or_else(|| {
+                outcome.stopped_itself.then(|| {
+                    format!("{display} started, then stopped again by itself. Some services do this when nothing needs them right now.")
+                })
             });
             Ok(ServiceActionResult { service: imp::get(&name).ok(), timed_out: outcome.timed_out, also, note, activity_id: None })
         };
@@ -596,48 +630,57 @@ pub async fn control_service(app: AppHandle, name: String, action: ServiceAction
             ServiceAction::Start => {
                 let started = imp::start(&name, &display)?;
                 if started.changed {
-                    log(if started.timed_out { "Asked to start" } else { "Started" }, &[], "");
+                    logged(if started.timed_out { "Asked to start" } else { "Started" }, &[]);
                 }
-                finish(started, Vec::new())
+                finish(&started, Vec::new(), None)
             }
             ServiceAction::Stop => {
-                let stopped = imp::stop(&name, &display)?;
+                let stopped = stop()?;
                 if stopped.changed {
-                    log(if stopped.timed_out { "Asked to stop" } else { "Stopped" }, &stopped.also, "Also stopped");
+                    logged(if stopped.timed_out { "Asked to stop" } else { "Stopped" }, &[("Also stopped", &stopped.also)]);
                 }
-                let also = stopped.also.clone();
-                finish(stopped, also)
+                finish(&stopped, stopped.also.clone(), None)
             }
             ServiceAction::Restart => {
-                let stopped = imp::stop(&name, &display)?;
+                let stopped = stop()?;
                 if stopped.timed_out {
-                    log("Asked to stop", &stopped.also, "Also stopped");
-                    let also = stopped.also.clone();
-                    return finish(stopped, also);
+                    logged("Asked to stop", &[("Also stopped", &stopped.also)]);
+                    let note = format!("{display} is taking a long time to stop, so it wasn't started again. Start it once it has stopped.");
+                    return finish(&stopped, stopped.also.clone(), Some(note));
                 }
                 let started = match imp::start(&name, &display) {
                     Ok(started) => started,
                     Err(e) => {
                         // It did stop, so that change is still recorded.
-                        log("Stopped", &stopped.also, "Also stopped");
+                        logged("Stopped", &[("Also stopped", &stopped.also)]);
                         return Err(format!("{display} stopped, but couldn't start again. {e}"));
                     }
                 };
-                // Bring back what was stopped with it, the services it needs first (best effort).
-                let mut also = Vec::new();
-                for dep in stopped.stopped_dependents.iter().rev() {
-                    if let Ok(info) = imp::get(dep)
-                        && imp::start(dep, &info.display_name).is_ok()
-                    {
-                        also.push(info.display_name);
-                    }
-                }
-                log(if started.timed_out { "Asked to restart" } else { "Restarted" }, &also, "Also restarted");
-                finish(started, also)
+                // Bring back what was stopped with it (best effort).
+                let (also, left) = start_again(&stopped.stopped_dependents);
+                let verb = if started.timed_out { "Asked to restart" } else { "Restarted" };
+                logged(verb, &[("Also restarted", &also), ("Still stopped", &left)]);
+                let note = (!left.is_empty())
+                    .then(|| format!("{display} restarted, but these services that need it didn't start again: {}.", left.join(", ")));
+                finish(&started, also, note)
             }
         }
     })
     .await
+}
+
+/// Starts services again that were stopped along with another one, the services they need first.
+/// Returns the display names of the ones that started and of the ones that didn't.
+fn start_again(stopped: &[String]) -> (Vec<String>, Vec<String>) {
+    let (mut started, mut failed) = (Vec::new(), Vec::new());
+    for key in stopped.iter().rev() {
+        let display = imp::get(key).map(|info| info.display_name).unwrap_or_else(|_| key.clone());
+        match imp::start(key, &display) {
+            Ok(_) => started.push(display),
+            Err(_) => failed.push(display),
+        }
+    }
+    (started, failed)
 }
 
 /// Changes how a service starts and records it in the activity log with an undo.
@@ -703,8 +746,8 @@ mod imp {
     use winreg::enums::{HKEY_LOCAL_MACHINE, KEY_READ};
 
     use super::{
-        ADMIN_NEEDED, Outcome, Raw, ServiceDetails, ServiceInfo, ServiceLink, ServiceStatus, StartupType, assemble, file_name, image_path,
-        split_multi_sz, status_from,
+        ADMIN_NEEDED, Outcome, Raw, ServiceDetails, ServiceInfo, ServiceLink, ServiceStatus, StartupType, StopFailed, assemble, file_name,
+        image_path, split_multi_sz, status_from,
     };
     use crate::os;
 
@@ -801,6 +844,10 @@ mod imp {
             Op::Change => ("change", "changed"),
         };
         match win32_code(e) {
+            ERROR_ACCESS_DENIED if matches!(op, Op::Read) && !os::is_elevated() => {
+                format!("Windows didn't let this app read {display}. Restart as administrator, then try again.")
+            }
+            ERROR_ACCESS_DENIED if matches!(op, Op::Read) => format!("Windows doesn't let any app read {display}."),
             ERROR_ACCESS_DENIED if os::is_elevated() => format!("Windows protects {display}, so it can't be {done}, even as administrator."),
             ERROR_ACCESS_DENIED => ADMIN_NEEDED.into(),
             ERROR_SERVICE_DISABLED => format!("{display} is disabled, so it can't start. Set its startup type to Manual or Automatic first."),
@@ -1161,26 +1208,36 @@ mod imp {
     }
 
     /// Stops a service after the running services that need it (Windows refuses otherwise).
-    pub fn stop(name: &str, display: &str) -> Result<Outcome, String> {
+    pub fn stop(name: &str, display: &str) -> Result<Outcome, StopFailed> {
         let scm = open_scm()?;
         let svc = open_service(&scm, name, SERVICE_STOP | SERVICE_QUERY_STATUS | SERVICE_ENUMERATE_DEPENDENTS)
             .map_err(|e| explain(display, Op::Stop, &e))?;
         // Listed in the order they have to stop.
         let running = dependents(&svc, SERVICE_ACTIVE);
         if let Some((_, dep_display, _)) = running.iter().find(|(dep, _, _)| super::known(dep).is_some_and(|k| k.1 == super::Safety::Protected)) {
-            return Err(format!("Stopping {display} would also stop {dep_display}, which Windows needs, so Ultimate PC Tool won't do it."));
+            return Err(format!("Stopping {display} would also stop {dep_display}, which Windows needs, so Ultimate PC Tool won't do it.").into());
         }
         let mut stopped = Vec::new();
         let mut also = Vec::new();
         for (dep, dep_display, _) in &running {
-            let other = open_service(&scm, dep, SERVICE_STOP | SERVICE_QUERY_STATUS).map_err(|e| explain(dep_display, Op::Stop, &e))?;
-            if stop_handle(&other, dep_display)?.timed_out {
-                return Err(format!("{dep_display} needs {display} and is taking too long to stop, so {display} was left running. Try again in a moment."));
+            let result = open_service(&scm, dep, SERVICE_STOP | SERVICE_QUERY_STATUS)
+                .map_err(|e| explain(dep_display, Op::Stop, &e))
+                .and_then(|other| stop_handle(&other, dep_display));
+            let message = match result {
+                Ok(outcome) if !outcome.timed_out => None,
+                Ok(_) => Some(format!("{dep_display} needs {display} and is taking too long to stop, so {display} was left running. Try again in a moment.")),
+                Err(e) => Some(format!("{display} wasn't stopped, because {dep_display} needs it and couldn't be stopped first. {e}")),
+            };
+            if let Some(message) = message {
+                return Err(StopFailed { message, stopped });
             }
             stopped.push(dep.clone());
             also.push(dep_display.clone());
         }
-        let mut outcome = stop_handle(&svc, display)?;
+        let mut outcome = match stop_handle(&svc, display) {
+            Ok(outcome) => outcome,
+            Err(message) => return Err(StopFailed { message, stopped }),
+        };
         outcome.changed |= !also.is_empty();
         outcome.also = also;
         outcome.stopped_dependents = stopped;
@@ -1202,10 +1259,11 @@ mod imp {
             StartupType::Disabled => (SERVICE_DISABLED, false),
         };
         // Cleared while the service is still automatic: only automatic services accept the flag.
-        if !delayed {
+        let was_delayed = query_delayed(&svc);
+        if !delayed && was_delayed {
             let _ = set_delayed(&svc, false);
         }
-        unsafe {
+        let changed = unsafe {
             ChangeServiceConfigW(
                 svc.0,
                 ENUM_SERVICE_TYPE(SERVICE_NO_CHANGE),
@@ -1219,8 +1277,14 @@ mod imp {
                 PCWSTR::null(),
                 PCWSTR::null(),
             )
+        };
+        if let Err(e) = changed {
+            // Left exactly as it was.
+            if was_delayed && !delayed {
+                let _ = set_delayed(&svc, true);
+            }
+            return Err(explain(display, Op::Change, &e));
         }
-        .map_err(|e| explain(display, Op::Change, &e))?;
         if delayed {
             set_delayed(&svc, true).map_err(|e| explain(display, Op::Change, &e))?;
         }
@@ -1230,7 +1294,7 @@ mod imp {
 
 #[cfg(not(windows))]
 mod imp {
-    use super::{Outcome, ServiceDetails, ServiceInfo, StartupType};
+    use super::{Outcome, ServiceDetails, ServiceInfo, StartupType, StopFailed};
 
     const ONLY_WINDOWS: &str = "Services can only be managed on Windows";
 
@@ -1250,8 +1314,8 @@ mod imp {
         Err(ONLY_WINDOWS.into())
     }
 
-    pub fn stop(_name: &str, _display: &str) -> Result<Outcome, String> {
-        Err(ONLY_WINDOWS.into())
+    pub fn stop(_name: &str, _display: &str) -> Result<Outcome, StopFailed> {
+        Err(ONLY_WINDOWS.to_string().into())
     }
 
     pub fn set_startup(_name: &str, _display: &str, _startup: StartupType) -> Result<(), String> {
@@ -1382,6 +1446,13 @@ mod tests {
         let mut stuck = service("Fax", 4, 3);
         stuck.can_stop = false;
         assert!(check_action(&stuck, ServiceAction::Stop).is_err());
+        // Just disabled but still running: it may stop, but a restart couldn't start it again.
+        let disabled_running = service("Fax", 4, 4);
+        assert!(check_action(&disabled_running, ServiceAction::Stop).is_ok());
+        assert!(check_action(&disabled_running, ServiceAction::Restart).is_err());
+        let paused = service("Fax", 7, 3);
+        assert!(paused.can_stop);
+        assert!(check_action(&paused, ServiceAction::Stop).is_ok());
         let copy = assemble(Raw { name: "CDPUserSvc_4f2a1".into(), display_name: "x".into(), service_type: 0xE0, start: Some(2), ..Default::default() }, WINDIR);
         assert_eq!(copy.template.as_deref(), Some("CDPUserSvc"));
         assert!(check_startup(&copy, StartupType::Manual, false).is_err());

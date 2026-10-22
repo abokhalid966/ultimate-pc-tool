@@ -1,0 +1,335 @@
+/* =====================================================================
+   Services page (imported by pages/Services.tsx). Uses the design
+   tokens from styles.css, so it follows both themes.
+   ===================================================================== */
+
+/* ---- Filters and the administrator hint ---- */
+
+.svc-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: -6px;
+}
+.svc-toolbar .segmented {
+  flex-wrap: wrap;
+}
+.svc-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  background: var(--fill-subtle);
+  color: var(--text-3);
+  transition:
+    background var(--dur-fast),
+    color var(--dur-fast);
+}
+.segmented button[aria-checked="true"] .svc-count {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.svc-admin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  min-height: 32px;
+  padding: 2px 3px 2px 10px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  background: var(--accent-soft);
+  font-size: 13px;
+}
+.svc-admin > svg {
+  flex-shrink: 0;
+  color: var(--accent-text);
+}
+.svc-admin > span {
+  min-width: 0;
+}
+@container (max-width: 1040px) {
+  .svc-admin > span {
+    display: none;
+  }
+}
+
+/* ---- Table ---- */
+
+.svc-table td {
+  height: 58px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+.svc-col-publisher {
+  width: 22%;
+}
+.svc-name-cell .name-flex {
+  gap: 12px;
+}
+.app-avatar.svc-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+.svc-name {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+.svc-name-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.svc-name-line strong {
+  flex: 0 1 auto;
+  font-weight: 600;
+}
+.svc-name-line .pill {
+  flex-shrink: 0;
+}
+.svc-sub {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-3);
+}
+.table tr.svc-off .svc-name-line strong {
+  color: var(--text-2);
+}
+.table tr.svc-off .svc-avatar {
+  opacity: 0.7;
+}
+@container (max-width: 640px) {
+  .svc-name-line .pill-outline {
+    display: none;
+  }
+}
+@container (max-width: 520px) {
+  .svc-name-line .pill {
+    display: none;
+  }
+}
+
+/* Status chip: filled dot while running, hollow when stopped, spinner while changing. */
+.svc-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 24px;
+  padding: 0 10px 0 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  background: var(--fill-subtle);
+  color: var(--text-2);
+}
+.svc-status.running {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+.svc-status.paused {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.svc-status.starting,
+.svc-status.stopping,
+.svc-status.pausing,
+.svc-status.resuming {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.svc-status .spinner {
+  width: 10px;
+  height: 10px;
+  border-width: 1.5px;
+}
+.svc-dot {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.svc-status.stopped .svc-dot,
+.svc-dot.stopped {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px currentColor;
+}
+.svc-link .svc-dot.running {
+  background: var(--ok);
+}
+.svc-link .svc-dot.stopped {
+  color: var(--text-3);
+}
+.svc-link .svc-dot.paused {
+  background: var(--warn-fill);
+}
+.svc-link .svc-dot.starting,
+.svc-link .svc-dot.stopping,
+.svc-link .svc-dot.pausing,
+.svc-link .svc-dot.resuming {
+  background: var(--accent);
+}
+
+.svc-startup {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.svc-startup.manual {
+  color: var(--text-2);
+}
+.svc-startup.unknown {
+  color: var(--text-3);
+}
+.svc-startup.disabled {
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  border: 1px solid var(--control-stroke);
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.svc-publisher {
+  display: block;
+  font-size: 13px;
+}
+.svc-publisher.microsoft {
+  color: var(--text-2);
+}
+.svc-publisher.unknown {
+  color: var(--text-3);
+}
+
+.svc-pill-protected {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.table td.svc-menu-cell {
+  padding: 0 8px 0 0;
+  text-align: right;
+}
+.svc-busy {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  color: var(--accent-text);
+}
+
+/* ---- Details panel ---- */
+
+.detail.svc-detail {
+  width: clamp(290px, 32vw, 380px);
+}
+.svc-detail .detail-title p {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.svc-detail .detail-stat strong.svc-stat-status {
+  display: flex;
+  align-items: center;
+  height: 24px;
+  margin-top: 2px;
+  font: inherit;
+}
+.svc-actions {
+  display: flex;
+  gap: 8px;
+}
+.svc-actions .btn {
+  flex: 1;
+}
+.svc-detail .field-help {
+  margin: -2px 0 0;
+}
+.svc-about,
+.svc-links {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.svc-about h4,
+.svc-links h4 {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.svc-about p {
+  font-size: 13px;
+  line-height: 19px;
+  user-select: text;
+}
+.svc-about p.svc-official {
+  padding-left: 10px;
+  border-left: 2px solid var(--control-stroke);
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--text-2);
+}
+.svc-dd-sub {
+  display: block;
+  margin-top: 1px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-3);
+  word-break: break-all;
+}
+.svc-link-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.svc-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--control-stroke);
+  background: var(--control);
+  color: var(--text);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast),
+    border-color var(--dur-fast);
+}
+.svc-link:hover {
+  background: var(--control-hover);
+  border-color: var(--control-stroke-strong);
+}
+.svc-link.static {
+  cursor: default;
+  background: transparent;
+  border-style: dashed;
+  color: var(--text-2);
+}
+.svc-link.static:hover {
+  border-color: var(--control-stroke);
+}
+
+.svc-confirm-also {
+  margin-top: 8px;
+}

@@ -106,6 +106,7 @@ window.__TAURI_INTERNALS__ = (() => {
     { id: "a1", timestamp: new Date().toISOString(), category: "Startup", description: 'Disabled startup app "Spotify"', detail: null, undo: { type: "startupToggle", source: "userRun", name: "Spotify", enabled: true }, undone: false },
     { id: "a2", timestamp: new Date().toISOString(), category: "Startup", description: 'Disabled startup app "SecurityHealth"', detail: null, undo: { type: "startupToggle", source: "machineRun", name: "SecurityHealth", enabled: true }, undone: false },
     { id: "a3", timestamp: new Date().toISOString(), category: "Commands", description: 'Ran "Flush DNS"', detail: "PowerShell: ipconfig /flushdns", undo: null, undone: false },
+    { id: "a4", timestamp: new Date().toISOString(), category: "Services", description: 'Set service "Fax" to Manual (was Automatic)', detail: "Service name: Fax", undo: { type: "serviceStartup", name: "Fax", displayName: "Fax", startup: "automatic" }, undone: false },
   ];
   const record = (category, description, detail = null, undo = null) => {
     const id = `act-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -124,6 +125,128 @@ window.__TAURI_INTERNALS__ = (() => {
     { name: "Notes.lnk", command: "C:\\Users\\me\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\Notes.lnk", source: "userFolder", location: "Startup folder (current user)", enabled: true, needsAdmin: false },
   ];
   const settings = { closeAction: null };
+
+  // ---- Services ----
+  // Mirrors src-tauri/src/services.rs: protected services can't be stopped or disabled, changes
+  // need administrator rights (`__MOCK_ELEVATED__`), and stop/start take a moment.
+  const SVC_ADMIN = "Changing services needs administrator rights. Use Restart as administrator, then try again.";
+  const svchost = (group) => `C:\\Windows\\system32\\svchost.exe -k ${group} -p`;
+  const sys32 = (file) => `C:\\Windows\\System32\\${file}`;
+  const svcNeeded = (display) =>
+    `Windows needs ${display} to work properly. Stopping or disabling it could crash your PC or stop it from starting, so Ultimate PC Tool won't do it.`;
+  let svcPid = 1100;
+  const svc = (name, displayName, o = {}) => {
+    const status = o.status ?? "running";
+    const shared = o.shared ?? !o.commandLine;
+    const microsoft = o.publisher ? o.publisher === "microsoft" : true;
+    return {
+      name,
+      displayName,
+      description: o.description ?? null,
+      summary: o.summary ?? null,
+      status,
+      startup: o.startup ?? "automatic",
+      pid: status === "running" ? (o.pid ?? (svcPid += 12)) : null,
+      program: o.program ?? (shared ? sys32(`${name.toLowerCase()}.dll`) : null),
+      commandLine: o.commandLine ?? svchost(o.group ?? "netsvcs"),
+      account: "account" in o ? o.account : "LocalSystem",
+      publisher: o.publisher ?? "microsoft",
+      company: o.company ?? (microsoft ? "Microsoft Corporation" : null),
+      safety: o.safety ?? "normal",
+      safetyNote: o.safetyNote ?? (o.safety === "protected" ? svcNeeded(displayName) : null),
+      // Whether it accepts the stop command; `publicSvc` adds "and it's running".
+      canStop: o.canStop !== false,
+      sharedProcess: shared,
+      dependencies: o.deps ?? [],
+      template: o.template ?? null,
+      // Mock-only behaviour, removed before the UI sees it.
+      _slowStop: o.slowStop ?? false,
+      _brokenStart: o.brokenStart ?? false,
+      _stopsItself: o.stopsItself ?? false,
+    };
+  };
+  const P = "protected";
+  const I = "important";
+  const third = (company, program, extra = {}) => ({ publisher: "thirdParty", company, program, commandLine: `"${program}"`, shared: false, ...extra });
+  let services = [
+    svc("RpcSs", "Remote Procedure Call (RPC)", { safety: P, canStop: false, group: "rpcss", deps: ["RpcEptMapper", "DcomLaunch"], account: "NT AUTHORITY\\NetworkService", summary: "Lets Windows programs talk to each other. Almost everything depends on it.", description: "The RPCSS service is the Service Control Manager for COM and DCOM servers. It performs object activations requests, object exporter resolutions and distributed garbage collection for COM and DCOM servers." }),
+    svc("DcomLaunch", "DCOM Server Process Launcher", { safety: P, canStop: false, group: "DcomLaunch", summary: "Starts many Windows background components. Windows can't run without it.", description: "The DCOMLAUNCH service launches COM and DCOM servers in response to object activation requests." }),
+    svc("RpcEptMapper", "RPC Endpoint Mapper", { safety: P, canStop: false, group: "RPCSS", account: "NT AUTHORITY\\NetworkService", summary: "Helps Windows programs find each other. Required by Windows.", description: "Resolves RPC interfaces identifiers to transport endpoints." }),
+    svc("Winmgmt", "Windows Management Instrumentation", { safety: P, deps: ["RPCSS"], summary: "Lets Windows and apps read information about your PC and its settings.", description: "Provides a common interface and object model to access management information about operating system, devices, applications and services." }),
+    svc("EventLog", "Windows Event Log", { safety: P, group: "LocalServiceNetworkRestricted", account: "NT AUTHORITY\\LocalService", summary: "Keeps the Windows logs that record errors and warnings.", description: "This service manages events and event logs. It supports logging events, querying events, subscribing to events, archiving event logs, and managing event metadata." }),
+    svc("Dhcp", "DHCP Client", { safety: P, group: "LocalServiceNetworkRestricted", deps: ["NSI", "Afd", "Tdx"], account: "NT Authority\\LocalService", summary: "Gets an address from your router so you can go online.", description: "Registers and updates IP addresses and DNS records for this computer. If this service is stopped, this computer will not receive dynamic IP addresses and DNS updates." }),
+    svc("Dnscache", "DNS Client", { safety: P, canStop: false, group: "NetworkService", deps: ["nsi"], account: "NT AUTHORITY\\NetworkService", summary: "Turns website names into addresses and remembers them.", description: "The DNS Client service (dnscache) caches Domain Name System (DNS) names and registers the full computer name for this computer." }),
+    svc("nsi", "Network Store Interface Service", { safety: P, group: "LocalService", deps: ["rpcss", "nsiproxy"], account: "NT Authority\\LocalService", summary: "Keeps network settings available to Windows. Without it you lose internet.", description: "This service delivers network notifications (e.g. interface addition/deleting etc) to user mode clients." }),
+    svc("BFE", "Base Filtering Engine", { safety: P, group: "LocalServiceNoNetworkFirewall", deps: ["RpcSs"], account: "NT AUTHORITY\\LocalService", summary: "The core of Windows Firewall and network security.", description: "The Base Filtering Engine (BFE) is a service that manages firewall and Internet Protocol security (IPsec) policies and implements user mode filtering." }),
+    svc("mpssvc", "Windows Defender Firewall", { safety: P, canStop: false, group: "LocalServiceNoNetworkFirewall", deps: ["mpsdrv", "bfe"], account: "NT Authority\\LocalService", summary: "Windows Firewall: blocks unwanted network connections.", safetyNote: "Windows Firewall protects your PC from network attacks. Stopping or disabling it would leave your PC exposed, so Ultimate PC Tool won't do it.", description: "Windows Defender Firewall helps protect your computer by preventing unauthorized users from gaining access to your computer through the Internet or a network." }),
+    svc("WinDefend", "Microsoft Defender Antivirus Service", { safety: P, canStop: false, shared: false, program: "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.25080.5-0\\MsMpEng.exe", commandLine: '"C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.25080.5-0\\MsMpEng.exe"', deps: ["RpcSs", "wscsvc"], summary: "Microsoft Defender Antivirus: protects your PC from viruses and malware.", safetyNote: "Microsoft Defender protects your PC from viruses and malware. Stopping or disabling it would leave your PC unprotected, so Ultimate PC Tool won't do it.", description: "Helps protect users from malware and other potentially unwanted software" }),
+    svc("AudioEndpointBuilder", "Windows Audio Endpoint Builder", { safety: P, group: "LocalSystemNetworkRestricted", summary: "Manages your speakers, headphones and microphones.", description: "Manages audio devices for the Windows Audio service. If this service is stopped, audio devices and effects will not function properly." }),
+    svc("Schedule", "Task Scheduler", { safety: P, canStop: false, deps: ["RPCSS", "SystemEventsBroker"], summary: "Task Scheduler: runs maintenance, updates and other scheduled tasks.", description: "Enables a user to configure and schedule automated tasks on this computer." }),
+    svc("CryptSvc", "Cryptographic Services", { safety: P, group: "NetworkService", deps: ["RpcSs"], account: "NT Authority\\NetworkService", summary: "Checks digital signatures of updates and apps, and manages certificates.", description: "Provides three management services: Catalog Database Service, which confirms the signatures of Windows files and allows new programs to be installed; Protected Root Service; and Automatic Root Certificate Update Service." }),
+    svc("ProfSvc", "User Profile Service", { safety: P, canStop: false, summary: "Loads your user profile when you sign in.", safetyNote: "Windows needs this service to load your account when you sign in. Stopping or disabling it could stop anyone from signing in, so Ultimate PC Tool won't do it.", description: "This service is responsible for loading and unloading user profiles." }),
+    svc("Audiosrv", "Windows Audio", { safety: I, group: "LocalServiceNetworkRestricted", deps: ["AudioEndpointBuilder", "RpcSs"], account: "NT AUTHORITY\\LocalService", summary: "Plays sound from Windows and your apps.", safetyNote: "Sound stops on this PC until the service runs again.", description: "Manages audio for Windows-based programs. If this service is stopped, audio devices and effects will not function properly." }),
+    svc("Spooler", "Print Spooler", { safety: I, shared: false, program: sys32("spoolsv.exe"), commandLine: sys32("spoolsv.exe"), deps: ["RPCSS", "http"], summary: "Sends documents to your printers.", safetyNote: "Printing stops until the service runs again. Restarting it often fixes stuck print jobs.", description: "This service spools print jobs and handles interaction with the printer. If you turn off this service, you won't be able to print or see your printers." }),
+    svc("PrintNotify", "Printer Extensions and Notifications", { startup: "manual", deps: ["Spooler"], summary: "Shows printer notifications and settings.", description: "This service opens custom printer dialog boxes and handles notifications from a remote print server or a printer." }),
+    svc("WlanSvc", "WLAN AutoConfig", { safety: I, group: "LocalSystemNetworkRestricted", deps: ["nativewifip", "RpcSs", "Ndisuio", "wcmsvc"], summary: "Connects to Wi-Fi networks.", safetyNote: "Wi-Fi disconnects and no Wi-Fi networks show up until the service runs again.", description: "The WLANSVC service provides the logic required to configure, discover, connect to, and disconnect from a wireless local area network (WLAN) as defined by IEEE 802.11 standards." }),
+    svc("wuauserv", "Windows Update", { safety: I, startup: "manual", deps: ["rpcss"], summary: "Windows Update: downloads and installs updates.", safetyNote: "Your PC stops getting updates, including security fixes. Turn it back on soon.", description: "Enables the detection, download, and installation of updates for Windows and other programs." }),
+    svc("BITS", "Background Intelligent Transfer Service", { safety: I, status: "stopped", startup: "manual", deps: ["RpcSs"], summary: "Downloads updates and files quietly in the background.", safetyNote: "Windows Update and some apps can't download in the background.", description: "Transfers files in the background using idle network bandwidth." }),
+    svc("WSearch", "Windows Search", { safety: I, startup: "automaticDelayed", shared: false, slowStop: true, program: sys32("SearchIndexer.exe"), commandLine: `${sys32("SearchIndexer.exe")} /Embedding`, deps: ["RPCSS", "BrokerInfrastructure"], summary: "Indexes your files so search in Start and File Explorer is fast.", safetyNote: "Searching your files becomes slow and may miss results.", description: "Provides content indexing, property caching, and search results for files, e-mail, and other content." }),
+    svc("bthserv", "Bluetooth Support Service", { safety: I, startup: "manual", group: "LocalService", deps: ["RpcSs"], account: "NT AUTHORITY\\LocalService", summary: "Connects Bluetooth devices like headphones, mice and keyboards.", safetyNote: "Bluetooth devices disconnect and new ones can't be paired.", description: "The Bluetooth service supports discovery and association of remote Bluetooth devices." }),
+    svc("Themes", "Themes", { safety: I, summary: "Draws the Windows look: colors, transparency and window styles.", safetyNote: "Windows switches to a plain look until the service runs again.", description: "Provides user experience theme management." }),
+    svc("W32Time", "Windows Time", { safety: I, status: "stopped", startup: "manual", group: "LocalService", account: "NT AUTHORITY\\LocalService", stopsItself: true, summary: "Keeps your clock in sync with internet time.", safetyNote: "Your clock may drift over time, which can cause sign-in and website errors.", description: "Maintains date and time synchronization on all clients and servers in the network." }),
+    svc("LanmanWorkstation", "Workstation", { safety: I, group: "NetworkService", deps: ["Bowser", "MRxSmb20", "NSI"], account: "NT AUTHORITY\\NetworkService", summary: "Opens shared folders and network drives on other PCs.", safetyNote: "Shared folders and mapped network drives stop working.", description: "Creates and maintains client network connections to remote servers using the SMB protocol." }),
+    svc("SessionEnv", "Remote Desktop Configuration", { startup: "manual", deps: ["RPCSS", "LanmanWorkstation"], summary: "Settings for Remote Desktop connections.", description: "Remote Desktop Configuration service (RDCS) is responsible for all Remote Desktop Services and Remote Desktop related configuration and session maintenance activities that require SYSTEM context." }),
+    svc("SysMain", "SysMain", { group: "LocalSystemNetworkRestricted", summary: "Learns which apps you use and preloads them so they open faster.", description: "Maintains and improves system performance over time." }),
+    svc("DiagTrack", "Connected User Experiences and Telemetry", { group: "utcsvc", deps: ["RpcSs"], summary: "Sends diagnostic and usage data to Microsoft.", description: "The Connected User Experiences and Telemetry service enables features that support in-application and connected user experiences." }),
+    svc("MapsBroker", "Downloaded Maps Manager", { status: "stopped", startup: "automaticDelayed", group: "NetworkService", account: "NT AUTHORITY\\NetworkService", deps: ["rpcss"], summary: "Downloads maps for the Maps app.", description: "Windows service for application access to downloaded maps." }),
+    svc("Fax", "Fax", { status: "stopped", startup: "manual", shared: false, program: sys32("fxssvc.exe"), commandLine: sys32("fxssvc.exe"), account: "NT AUTHORITY\\NetworkService", deps: ["TapiSrv", "RpcSs", "PlugPlay", "Spooler"], summary: "Sends and receives faxes. Only needed if you fax from this PC.", description: "Enables you to send and receive faxes, utilizing fax resources available on this computer or on the network." }),
+    svc("RemoteRegistry", "Remote Registry", { status: "stopped", startup: "disabled", group: "localService", account: "NT AUTHORITY\\LocalService", deps: ["RPCSS"], summary: "Lets other PCs change this PC's settings over the network.", description: "Enables remote users to modify registry settings on this computer." }),
+    svc("XblAuthManager", "Xbox Live Auth Manager", { status: "stopped", startup: "manual", summary: "Signs you in to Xbox games and apps.", description: "Provides authentication and authorization services for interacting with Xbox Live." }),
+    svc("XblGameSave", "Xbox Live Game Save", { status: "stopped", startup: "manual", deps: ["UserManager", "XblAuthManager"], summary: "Syncs saved games for Xbox games.", description: "This service syncs save data for Xbox Live save enabled games." }),
+    svc("lfsvc", "Geolocation Service", { startup: "manual", deps: ["RpcSs"], summary: "Gives apps your location when you allow it.", description: "This service monitors the current location of the system and manages geofences." }),
+    svc("WerSvc", "Windows Error Reporting Service", { status: "stopped", startup: "manual", group: "WerSvcGroup", summary: "Reports app crashes and problems to Microsoft.", description: "Allows errors to be reported when programs stop working or responding and allows existing solutions to be delivered." }),
+    svc("TermService", "Remote Desktop Services", { status: "stopped", startup: "manual", group: "NetworkService", account: "NT Authority\\NetworkService", deps: ["RPCSS"], summary: "Remote Desktop: lets people connect to this PC remotely.", description: "Allows users to connect interactively to a remote computer." }),
+    svc("WpnService", "Windows Push Notifications System Service", { summary: "Shows notifications from apps and Windows.", description: "This service runs in session 0 and hosts the notification platform and connection provider which handles the connection between the device and WNS server." }),
+    svc("CDPUserSvc_4f2a1", "Connected Devices Platform User Service_4f2a1", { group: "UnistackSvcGroup", template: "CDPUserSvc", account: null, summary: null, description: "This user service is used for Connected Devices Platform scenarios" }),
+    svc("OneSyncSvc_4f2a1", "Sync Host_4f2a1", { startup: "automaticDelayed", group: "UnistackSvcGroup", template: "OneSyncSvc", account: null, summary: "Syncs mail, contacts and calendar.", description: "This service synchronizes mail, contacts, calendar and various other user data." }),
+    svc("edgeupdate", "Microsoft Edge Update Service (edgeupdate)", { status: "stopped", startup: "automaticDelayed", shared: false, program: "C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\MicrosoftEdgeUpdate.exe", commandLine: '"C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\MicrosoftEdgeUpdate.exe" /svc', deps: ["RPCSS"], summary: "Keeps Microsoft Edge up to date.", description: "Keeps your Microsoft software up to date. If this service is disabled or stopped, your Microsoft software will not be kept up to date." }),
+    svc("ClickToRunSvc", "Microsoft Office Click-to-Run Service", { shared: false, program: "C:\\Program Files\\Common Files\\Microsoft Shared\\ClickToRun\\OfficeClickToRun.exe", commandLine: '"C:\\Program Files\\Common Files\\Microsoft Shared\\ClickToRun\\OfficeClickToRun.exe" /service', deps: ["RPCSS"], summary: "Installs and updates Microsoft Office.", description: "Manages resource coordination, background streaming, and system integration of Microsoft Office products and their related updates." }),
+    svc("wisvc", "Windows Insider Service", { status: "stopped", startup: "disabled", summary: "Windows Insider Program (preview builds of Windows).", description: "Provides infrastructure support for the Windows Insider Program." }),
+    svc("ssh-agent", "OpenSSH Authentication Agent", { status: "stopped", startup: "disabled", shared: false, program: sys32("OpenSSH\\ssh-agent.exe"), commandLine: sys32("OpenSSH\\ssh-agent.exe"), description: "Agent to hold private keys used for public key authentication." }),
+    svc("NVDisplay.ContainerLocalSystem", "NVIDIA Display Container LS", third("NVIDIA Corporation", "C:\\Windows\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_8e1c3f\\Display.NvContainer\\NVDisplay.Container.exe", { summary: "NVIDIA graphics driver helper (control panel and settings).", description: "Container service for NVIDIA root features" })),
+    svc("RtkAudioUniversalService", "Realtek Audio Universal Service", third("Realtek Semiconductor Corp.", "C:\\Windows\\System32\\DriverStore\\FileRepository\\realtekservice.inf_amd64_2d9b\\RtkAudUService64.exe", { description: "Realtek Audio Universal Service" })),
+    svc("Steam Client Service", "Steam Client Service", third("Valve Corporation", "C:\\Program Files (x86)\\Common Files\\Steam\\steamservice.exe", { status: "stopped", startup: "manual", commandLine: '"C:\\Program Files (x86)\\Common Files\\Steam\\steamservice.exe" /RunAsService', summary: "Lets Steam install and update games.", description: "Steam Client Service monitors and updates Steam content" })),
+    svc("gupdate", "Google Update Service (gupdate)", third("Google LLC", "C:\\Program Files (x86)\\Google\\Update\\GoogleUpdate.exe", { status: "stopped", startup: "automaticDelayed", commandLine: '"C:\\Program Files (x86)\\Google\\Update\\GoogleUpdate.exe" /svc', summary: "Keeps Google apps like Chrome up to date.", description: "Keeps your Google software up to date. If this service is disabled or stopped, your Google software will not be kept up to date." })),
+    svc("AdobeARMservice", "Adobe Acrobat Update Service", third("Adobe Inc.", "C:\\Program Files (x86)\\Common Files\\Adobe\\ARM\\1.0\\armsvc.exe", { description: "Adobe Acrobat Updater keeps your Adobe software up to date." })),
+    svc("TeamViewer", "TeamViewer", third("TeamViewer Germany GmbH", "C:\\Program Files\\TeamViewer\\TeamViewer_Service.exe", { description: "TeamViewer Remote Software" })),
+    svc("LGHUBUpdaterService", "LGHUB Updater Service", third("Logitech, Inc.", "C:\\Program Files\\LGHUB\\lghub_updater.exe", { startup: "manual", commandLine: '"C:\\Program Files\\LGHUB\\lghub_updater.exe" --run-as-service', description: "Logitech G HUB Updater Service" })),
+    svc("MySQL80", "MySQL80", third("Oracle Corporation", "C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysqld.exe", { status: "stopped", startup: "manual", account: "NT AUTHORITY\\NetworkService", commandLine: '"C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysqld.exe" --defaults-file="C:\\ProgramData\\MySQL\\MySQL Server 8.0\\my.ini" MySQL80' })),
+    svc("ContosoVpnHelper", "Contoso VPN Helper", third("Contoso Ltd.", "C:\\Program Files\\Contoso VPN\\vpnhelper.exe", { status: "stopped", startup: "manual", brokenStart: true, deps: ["RasMan"], description: "Helps Contoso VPN connect." })),
+  ];
+  const DRIVERS = { afd: "Ancillary Function Driver for Winsock", tdx: "NetIO Legacy TDI Support Driver", nsiproxy: "NSI Proxy Service Driver", mpsdrv: "Windows Defender Firewall Authorization Driver", http: "HTTP Service", nativewifip: "NativeWiFi Filter", ndisuio: "NDIS Usermode I/O Protocol", wcmsvc: "Windows Connection Manager", bowser: "Browser", mrxsmb20: "SMB 2.0 MiniRedirector", tapisrv: "Telephony", plugplay: "Plug and Play", usermanager: "User Manager", brokerinfrastructure: "Background Tasks Infrastructure Service", systemeventsbroker: "System Events Broker", wscsvc: "Security Center", rasman: "Remote Access Connection Manager" };
+  const findSvc = (name) => services.find((s) => s.name.toLowerCase() === String(name).toLowerCase());
+  const publicSvc = (s) => {
+    const { _slowStop, _brokenStart, _stopsItself, ...rest } = s;
+    return { ...rest, canStop: (rest.status === "running" || rest.status === "paused") && rest.canStop };
+  };
+  const getSvc = (name) => findSvc(name) ?? fail("This service no longer exists. It may have been uninstalled, so refresh the list.");
+  const svcDependents = (s) => services.filter((o) => o.dependencies.some((d) => d.toLowerCase() === s.name.toLowerCase()));
+  const svcLog = (category, description, name, parts = [], undo = null) => {
+    let detail = `Service name: ${name}`;
+    for (const [label, names] of parts) if (names.length) detail += `. ${label}: ${names.join(", ")}`;
+    return record(category, description, detail, undo);
+  };
+  const startupLabel = { automatic: "Automatic", automaticDelayed: "Automatic (delayed)", manual: "Manual", disabled: "Disabled" };
+  const startupRank = { automatic: 3, automaticDelayed: 2, manual: 1, disabled: 0 };
+  const setStatus = (s, status) => {
+    s.status = status;
+    s.pid = status === "running" ? (s.pid ?? (svcPid += 12)) : status === "stopped" ? null : s.pid;
+  };
+  const checkStartupChange = (s, startup, restoring) => {
+    if (s.template)
+      fail(`Windows makes a copy of the "${s.template}" service for each person who signs in, and this copy follows its settings. Change "${s.template}" instead.`);
+    if (s.safety === "protected" && (startup === "disabled" || (!restoring && startupRank[startup] < startupRank[s.startup]))) fail(s.safetyNote);
+  };
 
   const handlers = {
     get_app_info: () => ({ elevated: !!window.__MOCK_ELEVATED__, version: "0.1.0" }),
@@ -273,11 +396,139 @@ window.__TAURI_INTERNALS__ = (() => {
       record("Startup", `${enabled ? "Enabled" : "Disabled"} startup app "${name}"`, null, { type: "startupToggle", source, name, enabled: !enabled });
     },
 
+    list_services: async () => {
+      await sleep(350);
+      return services.map(publicSvc);
+    },
+    get_service: ({ name }) => publicSvc(getSvc(name)),
+    get_service_details: async ({ name }) => {
+      await sleep(120);
+      const s = getSvc(name);
+      const link = (dep) => {
+        if (dep.startsWith("+")) return { name: dep.slice(1), displayName: dep.slice(1), status: null, group: true };
+        const other = findSvc(dep);
+        if (other) return { name: dep, displayName: other.displayName, status: other.status, group: false };
+        return { name: dep, displayName: DRIVERS[dep.toLowerCase()] ?? dep, status: "running", group: false };
+      };
+      return {
+        dependencies: s.dependencies.map(link),
+        dependents: svcDependents(s).map((o) => ({ name: o.name, displayName: o.displayName, status: o.status, group: false })),
+      };
+    },
+    control_service: async ({ name, action }) => {
+      const s = getSvc(name);
+      const display = s.displayName;
+      // Same checks as check_action in services.rs, before anything is attempted.
+      if (action === "start" && s.startup === "disabled") fail(`${display} is disabled, so it can't start. Set its startup type to Manual or Automatic first.`);
+      if (action !== "start") {
+        if (s.safety === "protected") fail(s.safetyNote ?? `Windows needs ${display}, so Ultimate PC Tool won't stop it.`);
+        if ((s.status === "running" || s.status === "paused") && !s.canStop) fail(`Windows doesn't let ${display} be stopped while it's running.`);
+        if (action === "restart" && s.status === "stopped") fail(`${display} isn't running. Use Start instead.`);
+        if (action === "restart" && s.startup === "disabled")
+          fail(`${display} is disabled, so it couldn't start again after stopping. Set its startup type to Manual or Automatic first.`);
+      }
+      if (!window.__MOCK_ELEVATED__) {
+        await sleep(150);
+        fail(SVC_ADMIN);
+      }
+      const result = (extra = {}) => ({ service: publicSvc(s), timedOut: false, also: [], note: null, activityId: null, ...extra });
+      const stop = async () => {
+        const deps = svcDependents(s).filter((o) => o.status !== "stopped");
+        const blocker = deps.find((o) => o.safety === "protected");
+        if (blocker) fail(`Stopping ${display} would also stop ${blocker.displayName}, which Windows needs, so Ultimate PC Tool won't do it.`);
+        for (const d of deps) {
+          setStatus(d, "stopping");
+          await sleep(400);
+          setStatus(d, "stopped");
+        }
+        if (s.status === "stopped") return { changed: deps.length > 0, timedOut: false, deps };
+        setStatus(s, "stopping");
+        if (s._slowStop) {
+          // The app stops waiting but Windows keeps going; the page polls until it settles.
+          await sleep(2500);
+          setTimeout(() => setStatus(s, "stopped"), 6000);
+          return { changed: true, timedOut: true, deps };
+        }
+        await sleep(900);
+        setStatus(s, "stopped");
+        return { changed: true, timedOut: false, deps };
+      };
+      const start = async (target) => {
+        if (target.status === "running") return { changed: false };
+        setStatus(target, "starting");
+        await sleep(1000);
+        if (target._brokenStart) {
+          setStatus(target, "stopped");
+          fail(
+            `${target.displayName} stopped right after it started. The program behind it may be damaged or missing something it needs. Windows says: The system cannot find the file specified.`,
+          );
+        }
+        if (target._stopsItself) {
+          setStatus(target, "stopped");
+          return { changed: true, stoppedItself: true };
+        }
+        setStatus(target, "running");
+        return { changed: true };
+      };
+      const itself = (o) => (o.stoppedItself ? `${display} started, then stopped again by itself. Some services do this when nothing needs them right now.` : null);
+
+      if (action === "start") {
+        const started = await start(s);
+        if (started.changed) svcLog("Services", `Started service "${display}"`, s.name);
+        return result({ note: itself(started) });
+      }
+      const stopped = await stop();
+      const also = stopped.deps.map((d) => d.displayName);
+      if (action === "stop") {
+        if (stopped.changed) svcLog("Services", `${stopped.timedOut ? "Asked to stop" : "Stopped"} service "${display}"`, s.name, [["Also stopped", also]]);
+        return result({ timedOut: stopped.timedOut, also });
+      }
+      if (stopped.timedOut) {
+        svcLog("Services", `Asked to stop service "${display}"`, s.name, [["Also stopped", also]]);
+        return result({ timedOut: true, also, note: `${display} is taking a long time to stop, so it wasn't started again. Start it once it has stopped.` });
+      }
+      let started;
+      try {
+        started = await start(s);
+      } catch (e) {
+        svcLog("Services", `Stopped service "${display}"`, s.name, [["Also stopped", also]]);
+        fail(`${display} stopped, but couldn't start again. ${e}`);
+      }
+      const restarted = [];
+      for (const d of [...stopped.deps].reverse()) {
+        await start(d);
+        restarted.push(d.displayName);
+      }
+      svcLog("Services", `Restarted service "${display}"`, s.name, [["Also restarted", restarted]]);
+      return result({ also: restarted, note: itself(started) });
+    },
+    set_service_startup: async ({ name, startup }) => {
+      const s = getSvc(name);
+      checkStartupChange(s, startup, false);
+      const result = (activityId = null) => ({ service: publicSvc(s), timedOut: false, also: [], note: null, activityId });
+      if (s.startup === startup) return result();
+      if (!window.__MOCK_ELEVATED__) {
+        await sleep(120);
+        fail(SVC_ADMIN);
+      }
+      await sleep(250);
+      const previous = s.startup;
+      s.startup = startup;
+      const undo = { type: "serviceStartup", name: s.name, displayName: s.displayName, startup: previous };
+      return result(svcLog("Services", `Set service "${s.displayName}" to ${startupLabel[startup]} (was ${startupLabel[previous]})`, s.name, [], undo));
+    },
+
     list_activity: () => activity,
     undo_activity: ({ id }) => {
       const r = activity.find((a) => a.id === id);
       if (!r) fail("Activity entry not found");
       if (r.undo?.type === "restoreCommand") commands.push(r.undo.command);
+      if (r.undo?.type === "serviceStartup") {
+        const s = getSvc(r.undo.name);
+        if (!window.__MOCK_ELEVATED__) fail(SVC_ADMIN);
+        checkStartupChange(s, r.undo.startup, true);
+        s.startup = r.undo.startup;
+      }
       r.undone = true;
     },
     clear_activity: () => {
