@@ -114,6 +114,57 @@ window.__TAURI_INTERNALS__ = (() => {
     return id;
   };
 
+  // ---- Storage data ----
+  const cat = (kind, label, group, bytes, files, extra = {}) => ({ kind, label, description: `Leftover ${label.toLowerCase()} that are safe to remove.`, group, needsAdmin: false, suggested: true, locations: [`C:\\Users\\Alex\\AppData\\Local\\${label.replace(/ /g, "")}`], present: true, bytes, files, blocked: null, unmeasured: false, ...extra });
+  const cleanupCats = [
+    cat("userTemp", "Temporary files", "files", 3.4 * GB, 18234),
+    cat("thumbnails", "Thumbnail cache", "files", 0.31 * GB, 42),
+    cat("recycleBin", "Recycle Bin", "files", 1.8 * GB, 96, { suggested: false }),
+    cat("errorReports", "Error reports", "files", 0.05 * GB, 12),
+    cat("edge", "Microsoft Edge cache", "browsers", 0.92 * GB, 5120),
+    cat("chrome", "Google Chrome cache", "browsers", 1.2 * GB, 8400, { blocked: "Close Chrome first." }),
+    cat("windowsTemp", "Windows temporary files", "windows", 0.6 * GB, 900, { needsAdmin: true, blocked: "Needs administrator rights.", unmeasured: true, bytes: 0 }),
+    cat("windowsUpdate", "Windows Update leftovers", "windows", 2.7 * GB, 310, { needsAdmin: true, blocked: "Needs administrator rights." }),
+    cat("deliveryOptimization", "Delivery Optimization files", "windows", 0.8 * GB, 40, { needsAdmin: true, blocked: "Needs administrator rights." }),
+  ];
+  const cleanedKinds = new Set();
+  const folderTree = [
+    { node: 0, parent: null, name: "C:\\", path: "C:\\", bytes: 620 * GB, files: 912000, folders: 140000 },
+    { node: 1, parent: 0, name: "Users", path: "C:\\Users", bytes: 310 * GB, files: 402000, folders: 61000 },
+    { node: 2, parent: 0, name: "Program Files", path: "C:\\Program Files", bytes: 128 * GB, files: 210000, folders: 30000 },
+    { node: 3, parent: 0, name: "Windows", path: "C:\\Windows", bytes: 34 * GB, files: 180000, folders: 41000 },
+    { node: 4, parent: 0, name: "Program Files (x86)", path: "C:\\Program Files (x86)", bytes: 92 * GB, files: 70000, folders: 6000 },
+    { node: 5, parent: 0, name: "ProgramData", path: "C:\\ProgramData", bytes: 21 * GB, files: 30000, folders: 2000 },
+    { node: 6, parent: 1, name: "Alex", path: "C:\\Users\\Alex", bytes: 300 * GB, files: 390000, folders: 60000 },
+    { node: 7, parent: 1, name: "Public", path: "C:\\Users\\Public", bytes: 10 * GB, files: 12000, folders: 1000 },
+    { node: 8, parent: 6, name: "Videos", path: "C:\\Users\\Alex\\Videos", bytes: 140 * GB, files: 800, folders: 20 },
+    { node: 9, parent: 6, name: "AppData", path: "C:\\Users\\Alex\\AppData", bytes: 96 * GB, files: 360000, folders: 58000 },
+    { node: 10, parent: 6, name: "Downloads", path: "C:\\Users\\Alex\\Downloads", bytes: 48 * GB, files: 1900, folders: 60 },
+    { node: 11, parent: 6, name: "Documents", path: "C:\\Users\\Alex\\Documents", bytes: 16 * GB, files: 27000, folders: 1900 },
+  ];
+  const bigFiles = [
+    { dir: 8, name: "Holiday 2025.mp4", bytes: 38 * GB },
+    { dir: 10, name: "Win11_24H2_English_x64.iso", bytes: 5.8 * GB },
+    { dir: 8, name: "Gameplay capture.mkv", bytes: 12.4 * GB },
+    { dir: 10, name: "Setup_BigGame.exe", bytes: 3.1 * GB },
+    { dir: 0, name: "hiberfil.sys", bytes: 12.7 * GB },
+    { dir: 0, name: "pagefile.sys", bytes: 8 * GB },
+  ];
+  const isInside = (node, root) => {
+    for (let n = folderTree[node]; n; n = n.parent === null ? null : folderTree[n.parent]) if (n.node === root) return true;
+    return false;
+  };
+  const folderView = (node) => {
+    const f = folderTree[node];
+    const children = folderTree.filter((x) => x.parent === node).map((x) => ({ node: x.node, name: x.name, path: x.path, bytes: x.bytes, files: x.files, folders: x.folders, denied: false, hasChildren: folderTree.some((y) => y.parent === x.node) || x.files > 0 }));
+    const crumbs = [];
+    for (let n = f; n; n = n.parent === null ? null : folderTree[n.parent]) crumbs.unshift({ node: n.node, name: n.name });
+    const largestFiles = bigFiles.filter((b) => isInside(b.dir, node)).sort((a, b) => b.bytes - a.bytes).map((b) => ({ ...b, path: `${folderTree[b.dir].path}\\${b.name}`.replace("\\\\", "\\"), modifiedMs: Date.now() - 86400e3 * 40 }));
+    const childBytes = children.reduce((s, c) => s + c.bytes, 0);
+    const ownBytes = Math.max(0, f.bytes - childBytes - (children.length ? 6 * GB : 0));
+    return { node, name: f.name, path: f.path, bytes: f.bytes, files: f.files, folders: f.folders, ownBytes, ownFiles: 14, denied: false, crumbs, children, otherCount: children.length ? 23 : 0, otherBytes: children.length ? 6 * GB : 0, largestFiles };
+  };
+
   const metrics = () => ({ timestampMs: Date.now(), cpuName: "AMD Ryzen 7 7800X3D", cpuTotal: 20 + Math.random() * 30, cpuPerCore: Array.from({ length: 16 }, () => Math.random() * 100), cpuFreqMhz: 4200, memUsed: 14.2 * GB, memTotal: 32 * GB, swapUsed: 1 * GB, swapTotal: 4 * GB, netRxBps: Math.random() * 3e6, netTxBps: Math.random() * 4e5, diskReadBps: Math.random() * 2e7, diskWriteBps: Math.random() * 5e6, disks: [{ name: "Samsung 990 Pro", mount: "C:\\", fileSystem: "NTFS", totalBytes: 1000 * GB, availableBytes: 380 * GB, removable: false }, { name: "Data", mount: "D:\\", fileSystem: "NTFS", totalBytes: 2000 * GB, availableBytes: 90 * GB, removable: false }], temps: [{ label: "CPU Package", celsius: 61 }, { label: "GPU", celsius: 54 }], processCount: procs.length, uptimeSecs: 93784 });
   const startup = [
     { name: "Discord", command: "C:\\Users\\me\\AppData\\Local\\Discord\\Update.exe --processStart Discord.exe", source: "userRun", location: "Registry (current user)", enabled: true, needsAdmin: false },
@@ -650,6 +701,59 @@ window.__TAURI_INTERNALS__ = (() => {
       calls.push({ cmd: "open_windows_settings", page });
       if (!["windowsupdate", "storagesense", "powersleep", "batterysaver"].includes(page)) fail("Unknown Windows Settings page.");
     },
+
+    // ---- Storage ----
+    storage_cleanup_scan: async ({ onEvent }) => {
+      const out = [];
+      for (const c of cleanupCats) {
+        await sleep(90);
+        const cat = { ...c, bytes: cleanedKinds.has(c.kind) ? 0 : c.bytes, files: cleanedKinds.has(c.kind) ? 0 : c.files };
+        send(onEvent, cat);
+        out.push(cat);
+      }
+      return out;
+    },
+    storage_cleanup_run: async ({ kinds, onEvent }) => {
+      const results = [];
+      for (const kind of kinds) {
+        const c = cleanupCats.find((x) => x.kind === kind);
+        send(onEvent, { type: "started", kind });
+        await sleep(500);
+        const result = { kind, label: c.label, files: c.files, bytes: cleanedKinds.has(kind) ? 0 : c.bytes, skipped: kind === "userTemp" ? 12 : 0, error: null };
+        cleanedKinds.add(kind);
+        send(onEvent, { type: "finished", result });
+        results.push(result);
+      }
+      const sum = (k) => results.reduce((s, r) => s + r[k], 0);
+      record("Storage", `Cleaned ${results.length} item(s)`, null);
+      return { results, bytes: sum("bytes"), files: sum("files"), skipped: sum("skipped") };
+    },
+    storage_scan: async ({ scanId, path, onEvent }) => {
+      for (let i = 1; i <= 8; i++) {
+        await sleep(160);
+        send(onEvent, { type: "progress", files: i * 41000, folders: i * 5200, bytes: i * 21 * GB, denied: i, current: `${path}Users\\Alex\\AppData\\Local\\Packages\\${i}` });
+      }
+      const view = folderView(0);
+      return { scanId, root: path, bytes: view.bytes, files: view.files, folders: view.folders, denied: 7, links: 3, cancelled: false, elapsedMs: 1400, view };
+    },
+    storage_cancel_scan: () => {},
+    storage_folder: async ({ node }) => {
+      await sleep(80);
+      return folderView(node);
+    },
+    storage_check_delete: async ({ target }) => {
+      const f = target.type === "folder" ? folderTree.find((x) => x.node === target.node) : { name: target.name, path: `C:\\Users\\Alex\\Downloads\\${target.name}`, bytes: 4.2 * GB, files: 1 };
+      return { path: f.path, name: f.name, isFolder: target.type === "folder", bytes: f.bytes, files: f.files, blocked: f.name === "Windows" ? "This is a Windows system folder." : null, warning: null };
+    },
+    storage_delete: async ({ target }) => {
+      await sleep(300);
+      const name = target.type === "folder" ? folderTree.find((x) => x.node === target.node).name : target.name;
+      const id = record("Storage", `Moved ${name} to the Recycle Bin`, null, { type: "restoreFromRecycleBin", paths: [name], deletedAt: Date.now() });
+      return { path: name, bytes: 0, activityId: id };
+    },
+    storage_reveal: ({ path }) => calls.push({ cmd: "storage_reveal", path }),
+    storage_pick_folder: async () => "C:\\Users\\Alex\\Downloads",
+
     list_services: async () => {
       await sleep(350);
       return services.map(publicSvc);

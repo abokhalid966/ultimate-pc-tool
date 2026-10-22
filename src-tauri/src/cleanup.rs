@@ -9,7 +9,7 @@ use std::time::{Duration, SystemTime};
 use serde::Serialize;
 
 /// Files touched more recently than this are left alone (Disk Cleanup uses 7 days).
-const MIN_AGE: Duration = Duration::from_secs(24 * 60 * 60);
+pub const MIN_AGE: Duration = Duration::from_secs(24 * 60 * 60);
 
 #[derive(Serialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -52,7 +52,7 @@ fn temp_folder() -> Result<PathBuf, String> {
 }
 
 /// Cleans one folder's contents. Returns true when the folder ended up empty.
-fn clean_dir(dir: &Path, cutoff: SystemTime, dry_run: bool, report: &mut CleanReport) -> bool {
+pub fn clean_dir(dir: &Path, cutoff: SystemTime, dry_run: bool, report: &mut CleanReport) -> bool {
     let Ok(entries) = fs::read_dir(dir) else {
         report.skipped += 1;
         return false;
@@ -107,14 +107,14 @@ fn last_change(meta: &Metadata) -> Option<SystemTime> {
 }
 
 #[cfg(windows)]
-fn is_link(meta: &Metadata) -> bool {
+pub fn is_link(meta: &Metadata) -> bool {
     use std::os::windows::fs::MetadataExt;
     const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
     meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
 }
 
 #[cfg(not(windows))]
-fn is_link(meta: &Metadata) -> bool {
+pub fn is_link(meta: &Metadata) -> bool {
     meta.file_type().is_symlink()
 }
 
@@ -136,7 +136,7 @@ fn remove_link(path: &Path, meta: &Metadata) -> bool {
     if is_dir_link(meta) { fs::remove_dir(path).is_ok() } else { fs::remove_file(path).is_ok() }
 }
 
-fn remove_file(path: &Path, meta: &Metadata) -> bool {
+pub fn remove_file(path: &Path, meta: &Metadata) -> bool {
     if fs::remove_file(path).is_ok() {
         return true;
     }
@@ -150,7 +150,7 @@ fn remove_file(path: &Path, meta: &Metadata) -> bool {
     fs::set_permissions(path, perms).is_ok() && fs::remove_file(path).is_ok()
 }
 
-fn display(path: &Path) -> String {
+pub fn display(path: &Path) -> String {
     let s = path.to_string_lossy();
     s.strip_prefix(r"\\?\").unwrap_or(&s).to_string()
 }

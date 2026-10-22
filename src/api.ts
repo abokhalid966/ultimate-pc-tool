@@ -219,7 +219,135 @@ export type Undo =
   | { type: "restoreCommand"; command: SavedCommand }
   | { type: "powerPlan"; guid: string; name: string }
   | { type: "serviceStartup"; name: string; displayName: string; startup: ServiceStartup }
+  | { type: "restoreFromRecycleBin"; paths: string[]; deletedAt: number }
   | { type: "unknown" };
+
+// ---- Storage ----
+
+export type CleanupKind =
+  | "userTemp"
+  | "windowsTemp"
+  | "thumbnails"
+  | "recycleBin"
+  | "edge"
+  | "chrome"
+  | "brave"
+  | "firefox"
+  | "errorReports"
+  | "systemErrorReports"
+  | "deliveryOptimization"
+  | "windowsUpdate";
+
+export interface CleanupCategory {
+  kind: CleanupKind;
+  label: string;
+  description: string;
+  group: "files" | "browsers" | "windows";
+  needsAdmin: boolean;
+  /** Ticked when the page opens. */
+  suggested: boolean;
+  /** The folders or files it covers. */
+  locations: string[];
+  present: boolean;
+  bytes: number;
+  files: number;
+  /** Why it can't be cleaned right now (a browser is open, administrator rights needed). */
+  blocked: string | null;
+  /** The size couldn't be measured. */
+  unmeasured: boolean;
+}
+
+export interface CleanupResult {
+  kind: CleanupKind;
+  label: string;
+  files: number;
+  bytes: number;
+  /** Files left alone because they are new or in use. */
+  skipped: number;
+  error: string | null;
+}
+
+export type CleanupRunEvent = { type: "started"; kind: CleanupKind } | { type: "finished"; result: CleanupResult };
+
+export interface CleanupSummary {
+  results: CleanupResult[];
+  bytes: number;
+  files: number;
+  skipped: number;
+}
+
+export type ScanEvent = { type: "progress"; files: number; folders: number; bytes: number; denied: number; current: string };
+
+export interface FolderEntry {
+  node: number;
+  name: string;
+  path: string;
+  bytes: number;
+  files: number;
+  folders: number;
+  denied: boolean;
+  hasChildren: boolean;
+}
+
+export interface FileEntry {
+  /** The folder the file is in. */
+  dir: number;
+  name: string;
+  path: string;
+  bytes: number;
+  modifiedMs: number | null;
+}
+
+export interface FolderView {
+  node: number;
+  name: string;
+  path: string;
+  bytes: number;
+  files: number;
+  folders: number;
+  /** Files directly in this folder. */
+  ownBytes: number;
+  ownFiles: number;
+  denied: boolean;
+  crumbs: { node: number; name: string }[];
+  children: FolderEntry[];
+  otherCount: number;
+  otherBytes: number;
+  largestFiles: FileEntry[];
+}
+
+export interface ScanSummary {
+  scanId: string;
+  root: string;
+  bytes: number;
+  files: number;
+  folders: number;
+  /** Folders Windows wouldn't open. */
+  denied: number;
+  links: number;
+  /** Stopped early: sizes only include what was read. */
+  cancelled: boolean;
+  elapsedMs: number;
+  view: FolderView;
+}
+
+export type DeleteTarget = { type: "folder"; node: number } | { type: "file"; dir: number; name: string };
+
+export interface DeleteCheck {
+  path: string;
+  name: string;
+  isFolder: boolean;
+  bytes: number;
+  files: number;
+  blocked: string | null;
+  warning: string | null;
+}
+
+export interface DeleteResult {
+  path: string;
+  bytes: number;
+  activityId: string | null;
+}
 
 export interface ActionRecord {
   id: string;
@@ -358,6 +486,18 @@ export const api = {
   activity: () => invoke<ActionRecord[]>("list_activity"),
   undoActivity: (id: string) => invoke<void>("undo_activity", { id }),
   clearActivity: () => invoke<void>("clear_activity"),
+
+  /** Each category also arrives on `onEvent` as soon as it's measured. */
+  cleanupScan: (onEvent: Channel<CleanupCategory>) => invoke<CleanupCategory[]>("storage_cleanup_scan", { onEvent }),
+  cleanupRun: (kinds: CleanupKind[], onEvent: Channel<CleanupRunEvent>) => invoke<CleanupSummary>("storage_cleanup_run", { kinds, onEvent }),
+  storageScan: (scanId: string, path: string, onEvent: Channel<ScanEvent>) => invoke<ScanSummary>("storage_scan", { scanId, path, onEvent }),
+  cancelStorageScan: (scanId: string) => invoke<void>("storage_cancel_scan", { scanId }),
+  storageFolder: (scanId: string, node: number) => invoke<FolderView>("storage_folder", { scanId, node }),
+  checkStorageDelete: (scanId: string, target: DeleteTarget) => invoke<DeleteCheck>("storage_check_delete", { scanId, target }),
+  /** Moves to the Recycle Bin; returns the activity entry id for Undo. */
+  storageDelete: (scanId: string, target: DeleteTarget) => invoke<DeleteResult>("storage_delete", { scanId, target }),
+  revealInExplorer: (path: string) => invoke<void>("storage_reveal", { path }),
+  pickFolder: () => invoke<string | null>("storage_pick_folder"),
 };
 
 /** Tauri rejects with a plain string from Rust `Err(String)`. */

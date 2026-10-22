@@ -28,6 +28,9 @@ pub enum Undo {
     /// Puts a service's startup type back to `startup`.
     #[serde(rename_all = "camelCase")]
     ServiceStartup { name: String, display_name: String, startup: StartupType },
+    /// Puts files moved to the Recycle Bin back (`deleted_at` in Unix seconds).
+    #[serde(rename_all = "camelCase")]
+    RestoreFromRecycleBin { paths: Vec<String>, deleted_at: i64 },
     /// An entry written by a newer version; kept, but it can't be undone here.
     #[serde(other)]
     Unknown,
@@ -108,6 +111,7 @@ impl ActivityLog {
             }
             Undo::PowerPlan { guid, .. } => crate::health::set_active_power_plan(guid)?,
             Undo::ServiceStartup { name, startup, .. } => services::restore_startup(name, *startup)?,
+            Undo::RestoreFromRecycleBin { paths, deleted_at } => crate::storage::restore_from_recycle_bin(paths, *deleted_at)?,
             Undo::Unknown => return Err("This action can't be undone".into()),
         }
         self.with(app, |list| {
@@ -145,6 +149,12 @@ mod tests {
         let json = r#"{"type":"serviceStartup","name":"Spooler","displayName":"Print Spooler","startup":"automaticDelayed"}"#;
         let undo = serde_json::from_str::<Undo>(json).unwrap();
         assert!(matches!(undo, Undo::ServiceStartup { startup: StartupType::AutomaticDelayed, .. }));
+    }
+
+    #[test]
+    fn reads_recycle_bin_undo() {
+        let json = r#"{"type":"restoreFromRecycleBin","paths":["C:\\Users\\me\\old.zip"],"deletedAt":1760000000}"#;
+        assert!(matches!(serde_json::from_str::<Undo>(json).unwrap(), Undo::RestoreFromRecycleBin { deleted_at: 1760000000, .. }));
     }
 
     #[test]
