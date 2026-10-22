@@ -1,0 +1,72 @@
+/* Privacy page. */
+
+.privacy-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.privacy-summary > div {
+  flex: 1;
+}
+.privacy-summary p {
+  margin: 2px 0 0;
+}
+.privacy-hint,
+.privacy-bloat-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.privacy-hint {
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  font-size: 13px;
+}
+.privacy-hint > span,
+.privacy-bloat-head > p {
+  flex: 1;
+  margin: 0;
+}
+.privacy-h {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.privacy-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--fill-subtle);
+}
+.privacy-h + .privacy-row {
+  border-top: 0;
+}
+.privacy-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+.privacy-row p {
+  margin: 2px 0 4px;
+}
+.privacy-apps {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0 24px;
+}
+.privacy-apps li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 2px;
+  border-top: 1px solid var(--fill-subtle);
+}

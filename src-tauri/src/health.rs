@@ -1016,21 +1016,21 @@ fn analyze_temp(report: Option<Result<CleanReport, String>>, system_low: bool, o
 // ---- Power ----
 
 const BALANCED: &str = "381b4222-f694-41f0-9685-ff5bb260df2e";
-const HIGH_PERFORMANCE: &str = "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c";
+pub const HIGH_PERFORMANCE: &str = "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c";
 const POWER_SAVER: &str = "a1841308-3541-4fab-bc81-f71556f20b4a";
 /// Windows 11's "Best power efficiency" power mode (an overlay on the Balanced plan).
 const BEST_EFFICIENCY_MODE: &str = "961cc777-2547-4f9d-8174-7d86181b8a7a";
 
 #[derive(Clone, Debug, PartialEq)]
-struct PowerPlan {
-    guid: String,
+pub struct PowerPlan {
+    pub guid: String,
     /// As Windows names it, in the user's language.
-    name: String,
-    active: bool,
+    pub name: String,
+    pub active: bool,
 }
 
 impl PowerPlan {
-    fn label(&self) -> String {
+    pub fn label(&self) -> String {
         if !self.name.is_empty() {
             return self.name.clone();
         }
@@ -1080,7 +1080,7 @@ fn system32(program: &str) -> PathBuf {
     if path.is_file() { path } else { program.into() }
 }
 
-fn power_plans() -> Result<Vec<PowerPlan>, String> {
+pub fn power_plans() -> Result<Vec<PowerPlan>, String> {
     if !cfg!(windows) {
         return Err("Power plans are only available on Windows.".into());
     }
@@ -1483,6 +1483,7 @@ fn settings_uri(page: &str) -> Option<&'static str> {
         "storagesense" => Some("ms-settings:storagesense"),
         "powersleep" => Some("ms-settings:powersleep"),
         "batterysaver" => Some("ms-settings:batterysaver"),
+        "privacy-location" => Some("ms-settings:privacy-location"),
         _ => None,
     }
 }

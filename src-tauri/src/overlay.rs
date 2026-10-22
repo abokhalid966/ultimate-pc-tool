@@ -7,7 +7,7 @@ use crate::settings::SettingsStore;
 
 pub const LABEL: &str = "overlay";
 const WIDTH: f64 = 232.0;
-const HEIGHT: f64 = 148.0;
+const HEIGHT: f64 = 172.0;
 
 pub fn is_shown(app: &AppHandle) -> bool {
     app.get_webview_window(LABEL).is_some_and(|w| w.is_visible().unwrap_or(false))

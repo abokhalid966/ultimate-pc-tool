@@ -48,6 +48,7 @@ export function Overlay() {
       </div>
       <Meter label="CPU" pct={cpu} />
       <Meter label="RAM" pct={mem} />
+      {m?.gpu && <Meter label="GPU" pct={m.gpu.load} />}
       <div className="ov-row ov-net">
         <span>
           <ArrowDown size={12} /> {rate(m?.netRxBps ?? 0)}

@@ -94,6 +94,8 @@ pub struct Metrics {
     pub disk_write_bps: u64,
     pub disks: Vec<DiskInfo>,
     pub temps: Vec<TempInfo>,
+    /// The main graphics card, when Windows reports it.
+    pub gpu: Option<crate::gpu::GpuStats>,
     pub process_count: usize,
     pub uptime_secs: u64,
 }
@@ -188,6 +190,7 @@ pub fn start_sampler(app: AppHandle, shared: SharedSnapshot) {
             // Drives whose I/O counters have a starting point; a drive's first reading is its lifetime total.
             let mut io_baseline: HashSet<PathBuf> = disks.list().iter().map(|d| d.mount_point().to_path_buf()).collect();
             let mut protection = ProtectionCache::default();
+            let mut gpu = crate::gpu::Sampler::new();
             let mut last_net = Instant::now();
             let mut last_disk = Instant::now();
             let mut last_storage = Instant::now();
@@ -274,6 +277,7 @@ pub fn start_sampler(app: AppHandle, shared: SharedSnapshot) {
                         })
                         .collect(),
                     temps: TEMPS.read().list.clone(),
+                    gpu: gpu.sample(),
                     process_count: procs.as_ref().map_or_else(|| shared.read().processes.len(), Vec::len),
                     uptime_secs: System::uptime(),
                 };

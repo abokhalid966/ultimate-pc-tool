@@ -591,6 +591,21 @@ pub async fn get_service_details(name: String) -> Result<ServiceDetails, String>
 
 /// Starts, stops or restarts a service and waits (off the UI thread, with a time limit) until it
 /// gets there. Services that need it are stopped first, and started again after a restart.
+/// True when the service is running (Boost pauses only those).
+pub fn is_running(name: &str) -> bool {
+    imp::get(name).is_ok_and(|s| s.status == ServiceStatus::Running)
+}
+
+/// Stops a service for Boost; `label` names it in errors.
+pub fn pause(name: &str, label: &str) -> Result<(), String> {
+    imp::stop(name, label).map(|_| ()).map_err(|f| f.message)
+}
+
+/// Starts a service again after Boost.
+pub fn resume(name: &str, label: &str) -> Result<(), String> {
+    imp::start(name, label).map(|_| ())
+}
+
 #[tauri::command]
 pub async fn control_service(app: AppHandle, name: String, action: ServiceAction) -> Result<ServiceActionResult, String> {
     crate::blocking(move || {

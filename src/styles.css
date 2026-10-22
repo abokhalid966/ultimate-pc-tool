@@ -66,6 +66,7 @@
   --danger-soft: rgb(255 153 164 / 0.12);
 
   --chart-cpu: #3987e5;
+  --chart-gpu: #2fb380;
   --chart-mem: #9085e9;
   --chart-net: #199e70;
   --chart-net-up: #3987e5;
@@ -138,6 +139,8 @@
     --warn-soft: rgb(157 93 0 / 0.09);
     --danger-soft: rgb(196 43 28 / 0.08);
     --chart-cpu: #2a78d6;
+  --chart-gpu: #138a5e;
+    --chart-gpu: #138a5e;
     --chart-mem: #6250d6;
     --chart-net: #1baf7a;
     --chart-net-up: #2a78d6;
@@ -3076,4 +3079,43 @@ button.pill:hover {
 /* Indented follow-up rows, e.g. the alert limits under the alerts switch. */
 .settings-sub {
   padding-left: 54px;
+}
+
+/* Dashboard graphics card */
+.gpu-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.gpu-card .card-header {
+  margin-bottom: 0;
+}
+.gpu-card .card-header .muted {
+  min-width: 0;
+  max-width: 60%;
+}
+.gpu-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+}
+.gpu-stats > div {
+  display: flex;
+  flex-direction: column;
+}
+.gpu-stats strong {
+  font-size: 16px;
+  font-weight: 600;
+}
+.gpu-card .bar-fill {
+  background: var(--chart-gpu);
+}
+.text-ok {
+  color: var(--ok);
+}
+.text-warn {
+  color: var(--warn);
+}
+.text-danger {
+  color: var(--danger);
 }

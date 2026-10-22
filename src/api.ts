@@ -25,6 +25,7 @@ export interface Metrics {
   diskWriteBps: number;
   disks: DiskInfo[];
   temps: { label: string; celsius: number }[];
+  gpu: GpuStats | null;
   processCount: number;
   uptimeSecs: number;
 }
@@ -46,6 +47,139 @@ export interface AppInfo {
 }
 
 export type CloseAction = "tray" | "quit";
+
+export interface GpuStats {
+  name: string;
+  load: number;
+  memUsed: number;
+  memTotal: number;
+  temperature: number | null;
+}
+
+export interface Specs {
+  manufacturer: string;
+  model: string;
+  pcName: string;
+  board: string;
+  bios: string;
+  biosDate: string | null;
+  firmware: string | null;
+  serial: string;
+  os: string;
+  osVersion: string | null;
+  osBuild: string;
+  osArch: string;
+  installed: string | null;
+  lastBoot: string | null;
+  cpu: string;
+  cores: number;
+  threads: number;
+  maxMhz: number;
+  memory: number;
+  memorySlots: number;
+  modules: { slot: string; size: number; speed: number; maker: string; part: string }[];
+  gpus: { name: string; driver: string | null; driverDate: string | null; memory: number; resolution: string | null; refresh: number }[];
+  disks: { name: string; media: string; bus: string; size: number; health: string }[];
+  battery: { design: number; full: number } | null;
+}
+
+export interface NetAdapter {
+  index: number;
+  name: string;
+  description: string;
+  wireless: boolean;
+  linkSpeed: number;
+  mac: string;
+  ipv4: string[];
+  ipv6: string[];
+  gateway: string[];
+  dns: string[];
+  dnsAutomatic: boolean;
+}
+
+export interface WifiInfo {
+  ssid: string | null;
+  signal: number;
+  rxMbps: number;
+  txMbps: number;
+  channel: number | null;
+  standard: string | null;
+  needsLocation: boolean;
+}
+
+export interface PublicInfo {
+  ip: string | null;
+  isp: string | null;
+  city: string | null;
+  country: string | null;
+}
+
+export type SpeedEvent = { type: "ping"; ms: number } | { type: "progress"; phase: "download" | "upload"; mbps: number; percent: number };
+
+export interface SpeedResult {
+  pingMs: number;
+  jitterMs: number;
+  downMbps: number;
+  upMbps: number;
+  public: PublicInfo;
+  cancelled: boolean;
+  dataMb: number;
+}
+
+export interface AppConnections {
+  name: string;
+  exe: string | null;
+  pids: number[];
+  connections: number;
+  remotes: string[];
+}
+
+export type DnsProvider = "automatic" | "cloudflare" | "google" | "quad9" | "adguard";
+
+export interface DnsSpeed {
+  provider: DnsProvider | null;
+  server: string;
+  ms: number | null;
+}
+
+export interface BoostSettings {
+  powerPlan: boolean;
+  closeApps: string[];
+  reopenApps: boolean;
+  pauseServices: boolean;
+}
+
+export interface BoostInfo {
+  settings: BoostSettings;
+  state: { active: boolean; startedAt: number; previousPlan: string | null; closed: { name: string; path: string | null }[]; pausedServices: string[]; done: string[] };
+  runningApps: { name: string; memory: number; count: number }[];
+  elevated: boolean;
+  highPerformance: boolean;
+}
+
+export interface BoostResult {
+  done: string[];
+  problems: string[];
+}
+
+export interface PrivacyTweak {
+  id: string;
+  title: string;
+  description: string;
+  group: string;
+  recommended: boolean;
+  admin: boolean;
+  explorer: boolean;
+  applied: boolean;
+}
+
+export interface BloatApp {
+  label: string;
+  package: string;
+  fullName: string;
+  family: string;
+  recommended: boolean;
+}
 
 export interface AlertSettings {
   enabled: boolean;
@@ -462,6 +596,22 @@ export const api = {
   settings: () => invoke<Settings>("get_settings"),
   setCloseAction: (action: CloseAction | null) => invoke<void>("set_close_action", { action }),
   setAlerts: (alerts: AlertSettings) => invoke<void>("set_alerts", { alerts }),
+  specs: () => invoke<Specs>("get_specs"),
+  networkInfo: () => invoke<{ adapters: NetAdapter[]; wifi: WifiInfo | null }>("get_network_info"),
+  publicInfo: () => invoke<PublicInfo>("get_public_info"),
+  speedTest: (onEvent: Channel<SpeedEvent>) => invoke<SpeedResult>("network_speed_test", { onEvent }),
+  cancelSpeedTest: () => invoke<void>("network_cancel_speed_test"),
+  connections: () => invoke<AppConnections[]>("network_connections"),
+  setDns: (index: number, adapter: string, provider: DnsProvider) => invoke<string | null>("network_set_dns", { index, adapter, provider }),
+  dnsBenchmark: (current: string | null) => invoke<DnsSpeed[]>("network_dns_benchmark", { current }),
+  boost: () => invoke<BoostInfo>("get_boost"),
+  setBoostSettings: (settings: BoostSettings) => invoke<void>("set_boost_settings", { settings }),
+  startBoost: () => invoke<BoostResult>("start_boost"),
+  stopBoost: () => invoke<BoostResult>("stop_boost"),
+  privacyTweaks: () => invoke<PrivacyTweak[]>("list_privacy_tweaks"),
+  setPrivacyTweaks: (ids: string[], on: boolean) => invoke<string | null>("set_privacy_tweaks", { ids, on }),
+  bloatApps: () => invoke<BloatApp[]>("list_bloat_apps"),
+  removeBloatApps: (targets: { fullName: string; label: string }[]) => invoke<{ label: string; error: string | null }[]>("remove_bloat_apps", { targets }),
   getAutostart: () => invoke<boolean>("get_autostart"),
   setAutostart: (enabled: boolean) => invoke<void>("set_autostart", { enabled }),
   setOverlay: (show: boolean) => invoke<void>("set_overlay", { show }),

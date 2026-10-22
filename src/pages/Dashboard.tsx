@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ChevronRight, CircleCheck, Clock, Cpu, HardDrive, HeartPulse, ListTree, MemoryStick, Thermometer, TriangleAlert, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, CircleCheck, Clock, Cpu, Gpu, HardDrive, HeartPulse, ListTree, MemoryStick, Thermometer, TriangleAlert, X } from "lucide-react";
 import { api, errorText, Metrics, ProcessInfo, SystemOverview } from "../api";
 import type { NavigateOptions } from "../App";
 import { useConfirm } from "../components/Confirm";
@@ -75,6 +75,7 @@ export function Dashboard({ metrics, onNavigate, onCleanTemp }: Props) {
               <Threads m={m} />
             </div>
             <div className="dash-col">
+              {m.gpu && <GraphicsCard m={m} history={history} />}
               <Drives m={m} />
               <AboutPc m={m} overview={overview} />
             </div>
@@ -521,6 +522,46 @@ function TopApps({ memTotal, onNavigate }: { memTotal: number; onNavigate: Props
 
 // ---------------------------------------------------------------------------------------------
 // Drives, threads, about
+
+function GraphicsCard({ m, history }: { m: Metrics; history: Metrics[] }) {
+  const g = m.gpu!;
+  const memPct = g.memTotal > 0 ? (g.memUsed / g.memTotal) * 100 : 0;
+  const tempLvl: Level = g.temperature === null ? "ok" : g.temperature >= 90 ? "danger" : g.temperature >= 80 ? "warn" : "ok";
+  return (
+    <section className="card gpu-card">
+      <div className="card-header">
+        <h3>
+          <Gpu size={16} /> Graphics card
+        </h3>
+        <span className="muted truncate" title={g.name}>
+          {g.name}
+        </span>
+      </div>
+      <div className="gpu-stats">
+        <div>
+          <span className="muted small">Load</span>
+          <strong className="num-text">{pct(g.load)}</strong>
+        </div>
+        <div>
+          <span className="muted small">Video memory</span>
+          <strong className="num-text">{g.memTotal > 0 ? `${bytes(g.memUsed)} of ${bytes(g.memTotal)}` : bytes(g.memUsed)}</strong>
+        </div>
+        {g.temperature !== null && (
+          <div>
+            <span className="muted small">Temperature</span>
+            <strong className={`num-text ${tempLvl !== "ok" ? `text-${tempLvl}` : ""}`}>{g.temperature.toFixed(0)}°C</strong>
+          </div>
+        )}
+      </div>
+      <Sparkline series={[{ label: "GPU", values: history.map((h) => h.gpu?.load ?? 0), color: "var(--chart-gpu)" }]} max={100} format={(v) => pct(v)} />
+      {g.memTotal > 0 && (
+        <div className="bar" role="meter" aria-valuenow={Math.round(memPct)} aria-valuemin={0} aria-valuemax={100} aria-label="Video memory used">
+          <div className="bar-fill" style={{ width: `${memPct}%` }} />
+        </div>
+      )}
+    </section>
+  );
+}
 
 function Drives({ m }: { m: Metrics }) {
   return (

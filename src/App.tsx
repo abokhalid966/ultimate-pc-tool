@@ -24,6 +24,10 @@ import { Settings } from "./pages/Settings";
 import { Startup } from "./pages/Startup";
 import { Storage } from "./pages/Storage";
 import { Automations } from "./pages/Automations";
+import { Boost } from "./pages/Boost";
+import { Network } from "./pages/Network";
+import { Privacy } from "./pages/Privacy";
+import { SystemInfo } from "./pages/SystemInfo";
 import { ShellKind, Terminal, TerminalRequest } from "./pages/Terminal";
 
 export default function App() {
@@ -243,6 +247,10 @@ function AppShell() {
           {page === "services" && <Services elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} />}
           {page === "automations" && <Automations elevated={appInfo.elevated} />}
           {page === "storage" && <Storage elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} disks={m?.disks ?? []} />}
+          {page === "sysinfo" && <SystemInfo />}
+          {page === "network" && <Network elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} />}
+          {page === "boost" && <Boost onRestartAsAdmin={restartAsAdmin} />}
+          {page === "privacy" && <Privacy elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} />}
           {page === "activity" && <Activity elevated={appInfo.elevated} />}
           {page === "settings" && <Settings appInfo={appInfo} onRestartAsAdmin={restartAsAdmin} />}
         </main>

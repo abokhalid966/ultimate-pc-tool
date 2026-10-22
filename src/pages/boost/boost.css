@@ -1,0 +1,115 @@
+/* Boost page. */
+
+.boost-hero {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 24px 28px;
+}
+.boost-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-shrink: 0;
+  width: 148px;
+  height: 148px;
+  border-radius: 50%;
+  border: 0;
+  color: var(--on-accent);
+  background: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: 0 0 0 8px var(--accent-soft);
+  transition: transform var(--dur) var(--ease), background var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.boost-button:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.boost-button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.boost-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.boost-hero.on .boost-button {
+  background: var(--ok);
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--ok) 18%, transparent), 0 0 32px color-mix(in srgb, var(--ok) 35%, transparent);
+}
+.boost-status {
+  flex: 1;
+  min-width: 0;
+}
+.boost-status h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+.boost-status p {
+  margin: 4px 0 0;
+}
+.boost-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+.boost-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.boost-list svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.boost-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.boost-h {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.boost-option {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--fill-subtle);
+}
+.boost-option:first-of-type {
+  border-top: 0;
+}
+.boost-option p {
+  margin: 2px 0 6px;
+}
+.boost-apps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 360px;
+  overflow-y: auto;
+}
+.boost-apps li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 2px;
+  border-top: 1px solid var(--fill-subtle);
+}
+.boost-apps li:first-child {
+  border-top: 0;
+}

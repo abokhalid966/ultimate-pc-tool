@@ -26,8 +26,9 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
     let show = MenuItem::with_id(app, "show", "Open Optimo", true, None::<&str>)?;
     let palette = MenuItem::with_id(app, "palette", "Command palette", true, None::<&str>)?;
     let overlay = MenuItem::with_id(app, "overlay", "Show or hide the mini overlay", true, None::<&str>)?;
+    let boost = MenuItem::with_id(app, "boost", "Boost on or off", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&show, &palette, &overlay, &PredefinedMenuItem::separator(app)?, &quit])?;
+    let menu = Menu::with_items(app, &[&show, &palette, &overlay, &boost, &PredefinedMenuItem::separator(app)?, &quit])?;
 
     TrayIconBuilder::with_id(TRAY_ID)
         .icon(app.default_window_icon().cloned().expect("app icon missing"))
@@ -43,6 +44,7 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
             "overlay" => {
                 let _ = crate::overlay::set_shown(app, !crate::overlay::is_shown(app));
             }
+            "boost" => crate::boost::toggle_from_tray(app),
             "quit" => app.exit(0),
             _ => {}
         })

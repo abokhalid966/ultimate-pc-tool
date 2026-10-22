@@ -31,6 +31,12 @@ pub enum Undo {
     /// Puts files moved to the Recycle Bin back (`deleted_at` in Unix seconds).
     #[serde(rename_all = "camelCase")]
     RestoreFromRecycleBin { paths: Vec<String>, deleted_at: i64 },
+    /// Puts an adapter's DNS servers back; `None` means automatic.
+    #[serde(rename_all = "camelCase")]
+    Dns { index: u32, adapter: String, servers: Option<Vec<String>> },
+    /// Puts privacy registry settings back as they were.
+    #[serde(rename_all = "camelCase")]
+    Registry { values: Vec<crate::privacy::RegValue> },
     /// An entry written by a newer version; kept, but it can't be undone here.
     #[serde(other)]
     Unknown,
@@ -112,6 +118,8 @@ impl ActivityLog {
             Undo::PowerPlan { guid, .. } => crate::health::set_active_power_plan(guid)?,
             Undo::ServiceStartup { name, startup, .. } => services::restore_startup(name, *startup)?,
             Undo::RestoreFromRecycleBin { paths, deleted_at } => crate::storage::restore_from_recycle_bin(paths, *deleted_at)?,
+            Undo::Dns { index, servers, .. } => crate::network::restore_dns(*index, servers)?,
+            Undo::Registry { values } => crate::privacy::restore(values)?,
             Undo::Unknown => return Err("This action can't be undone".into()),
         }
         self.with(app, |list| {
@@ -149,6 +157,15 @@ mod tests {
         let json = r#"{"type":"serviceStartup","name":"Spooler","displayName":"Print Spooler","startup":"automaticDelayed"}"#;
         let undo = serde_json::from_str::<Undo>(json).unwrap();
         assert!(matches!(undo, Undo::ServiceStartup { startup: StartupType::AutomaticDelayed, .. }));
+    }
+
+    #[test]
+    fn reads_dns_and_registry_undo() {
+        let json = r#"{"type":"dns","index":12,"adapter":"Wi-Fi","servers":null}"#;
+        assert!(matches!(serde_json::from_str::<Undo>(json).unwrap(), Undo::Dns { index: 12, servers: None, .. }));
+        let json = r#"{"type":"registry","values":[{"hive":"currentUser","path":"Software\\X","name":"Enabled","previous":1}]}"#;
+        let Undo::Registry { values } = serde_json::from_str::<Undo>(json).unwrap() else { panic!("wrong variant") };
+        assert_eq!(values[0].previous, Some(1));
     }
 
     #[test]

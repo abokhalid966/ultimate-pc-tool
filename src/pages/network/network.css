@@ -1,0 +1,182 @@
+/* Network page. */
+
+.net-top {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+.net-conn-head,
+.net-speed-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.net-speed-head {
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.net-speed-head h3,
+.net-conn h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.net-speed-head p {
+  margin: 4px 0 0;
+}
+.net-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--radius-lg);
+  color: var(--accent-text);
+  background: var(--accent-soft);
+}
+.net-conn-name {
+  font-size: 18px;
+  font-weight: 600;
+}
+.net-conn-head > div {
+  flex: 1;
+  min-width: 0;
+}
+.signal {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 20px;
+}
+.signal span {
+  width: 5px;
+  border-radius: 2px;
+  background: var(--track);
+}
+.signal span.on {
+  background: var(--ok);
+}
+.net-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 4px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  background: var(--fill-subtle);
+  font-size: 13px;
+}
+.net-hint > span {
+  flex: 1;
+}
+.net-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px 20px;
+  margin: 16px 0 0;
+}
+.net-facts dt {
+  color: var(--text-2);
+  font-size: 12px;
+}
+.net-facts dd {
+  margin: 2px 0 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.net-speed-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.net-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: var(--radius);
+  background: var(--fill-subtle-2);
+  border: 1px solid transparent;
+}
+.net-stat.active {
+  border-color: var(--accent);
+}
+.net-stat .small {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.net-stat-value {
+  font-size: 26px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.net-stat-value small {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-2);
+}
+.net-speed-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.net-speed-progress .bar-fill {
+  background: var(--accent);
+}
+.net-speed p {
+  margin: 0;
+}
+.dns-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.dns-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  border-radius: var(--radius);
+  border: 1px solid var(--card-stroke);
+  background: var(--fill-subtle-2);
+  cursor: pointer;
+}
+.dns-option:hover:not(:disabled) {
+  background: var(--fill-subtle);
+}
+.dns-option:disabled {
+  cursor: default;
+}
+.dns-option.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.dns-option:disabled:not(.selected) {
+  opacity: 0.7;
+}
+.dns-option-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+.dns-option-top .pill {
+  margin-left: auto;
+}
+.net-remotes {
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

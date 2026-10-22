@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, Box, Brush, CircleX, CornerDownLeft, Gauge, HeartPulse, Lock, LucideIcon, Monitor, Moon, PictureInPicture2, Power, Search, Settings as SettingsIcon, ShieldCheck, SquareTerminal, Sun, Terminal as TerminalIcon, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Box, Brush, CircleX, CornerDownLeft, Gauge, HeartPulse, Lock, LucideIcon, Monitor, Moon, PictureInPicture2, Power, Rocket, Search, Settings as SettingsIcon, ShieldCheck, SquareTerminal, Sun, Terminal as TerminalIcon, Wifi, X } from "lucide-react";
 import { api, CloseAction, errorText, ProcessInfo, SavedCommand } from "../api";
 import type { NavigateOptions } from "../App";
 import { useEndProcesses } from "../hooks/useActions";
@@ -138,6 +138,30 @@ export function CommandPalette({ elevated, onClose, onNavigate, onRunCommand, on
           onNavigate("health");
           startHealthCheck();
         },
+      },
+      {
+        id: "q-boost",
+        group: "Actions",
+        label: "Turn Boost on or off",
+        hint: "Game mode: more power, fewer background apps",
+        keywords: "game gaming mode performance fps boost turbo",
+        icon: Rocket,
+        type: "Action",
+        run: () =>
+          api
+            .boost()
+            .then((b) => (b.state.active ? api.stopBoost() : api.startBoost()).then(() => toast(b.state.active ? "Boost is off." : "Boost is on.", "success")))
+            .catch((e) => toast(errorText(e), "error")),
+      },
+      {
+        id: "q-speedtest",
+        group: "Actions",
+        label: "Test internet speed",
+        hint: "Download, upload and ping",
+        keywords: "network wifi internet speed test download upload ping dns",
+        icon: Wifi,
+        type: "Check",
+        run: () => onNavigate("network"),
       },
       { id: "q-term-ps", group: "Actions", label: "New PowerShell tab", icon: SquareTerminal, type: "Terminal", run: () => onOpenTerminal("powershell") },
       { id: "q-term-cmd", group: "Actions", label: "New Command Prompt tab", icon: TerminalIcon, type: "Terminal", run: () => onOpenTerminal("cmd") },

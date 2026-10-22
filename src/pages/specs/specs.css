@@ -1,0 +1,67 @@
+/* System info page. */
+
+.spec-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 22px;
+}
+.spec-hero-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg, 12px);
+  color: var(--accent-text);
+  background: var(--accent-soft);
+}
+.spec-hero h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+.spec-hero p {
+  margin: 2px 0 0;
+}
+.spec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.spec-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.spec-card dl {
+  margin: 0;
+}
+.spec-row {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  gap: 12px;
+  padding: 7px 0;
+  border-top: 1px solid var(--fill-subtle);
+  font-size: 13px;
+}
+.spec-card dl > .spec-row:first-child,
+.spec-sub:first-child > .spec-row:first-child {
+  border-top: 0;
+}
+.spec-row dt {
+  color: var(--text-2);
+}
+.spec-row dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.spec-sub + .spec-sub {
+  margin-top: 8px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--card-stroke);
+}

@@ -165,7 +165,7 @@ window.__TAURI_INTERNALS__ = (() => {
     return { node, name: f.name, path: f.path, bytes: f.bytes, files: f.files, folders: f.folders, ownBytes, ownFiles: 14, denied: false, crumbs, children, otherCount: children.length ? 23 : 0, otherBytes: children.length ? 6 * GB : 0, largestFiles };
   };
 
-  const metrics = () => ({ timestampMs: Date.now(), cpuName: "AMD Ryzen 7 7800X3D", cpuTotal: 20 + Math.random() * 30, cpuPerCore: Array.from({ length: 16 }, () => Math.random() * 100), cpuFreqMhz: 4200, memUsed: 14.2 * GB, memTotal: 32 * GB, swapUsed: 1 * GB, swapTotal: 4 * GB, netRxBps: Math.random() * 3e6, netTxBps: Math.random() * 4e5, diskReadBps: Math.random() * 2e7, diskWriteBps: Math.random() * 5e6, disks: [{ name: "Samsung 990 Pro", mount: "C:\\", fileSystem: "NTFS", totalBytes: 1000 * GB, availableBytes: 380 * GB, removable: false }, { name: "Data", mount: "D:\\", fileSystem: "NTFS", totalBytes: 2000 * GB, availableBytes: 90 * GB, removable: false }], temps: [{ label: "CPU Package", celsius: 61 }, { label: "GPU", celsius: 54 }], processCount: procs.length, uptimeSecs: 93784 });
+  const metrics = () => ({ timestampMs: Date.now(), cpuName: "AMD Ryzen 7 7800X3D", cpuTotal: 20 + Math.random() * 30, cpuPerCore: Array.from({ length: 16 }, () => Math.random() * 100), cpuFreqMhz: 4200, memUsed: 14.2 * GB, memTotal: 32 * GB, swapUsed: 1 * GB, swapTotal: 4 * GB, netRxBps: Math.random() * 3e6, netTxBps: Math.random() * 4e5, diskReadBps: Math.random() * 2e7, diskWriteBps: Math.random() * 5e6, disks: [{ name: "Samsung 990 Pro", mount: "C:\\", fileSystem: "NTFS", totalBytes: 1000 * GB, availableBytes: 380 * GB, removable: false }, { name: "Data", mount: "D:\\", fileSystem: "NTFS", totalBytes: 2000 * GB, availableBytes: 90 * GB, removable: false }], temps: [{ label: "CPU Package", celsius: 61 }, { label: "GPU", celsius: 54 }], processCount: procs.length, uptimeSecs: 93784, gpu: { name: "NVIDIA GeForce RTX 4070", load: 10 + Math.random() * 40, memUsed: 3.1 * GB, memTotal: 12 * GB, temperature: 52 } });
   const startup = [
     { name: "Discord", command: "C:\\Users\\me\\AppData\\Local\\Discord\\Update.exe --processStart Discord.exe", source: "userRun", location: "Registry (current user)", enabled: true, needsAdmin: false },
     { name: "SecurityHealth", command: "%windir%\\system32\\SecurityHealthSystray.exe", source: "machineRun", location: "Registry (all users)", enabled: true, needsAdmin: true },
@@ -522,8 +522,81 @@ window.__TAURI_INTERNALS__ = (() => {
     if (s.safety === "protected" && (startup === "disabled" || (!restoring && startupRank[startup] < startupRank[s.startup]))) fail(s.safetyNote);
   };
 
+
+  // ---- v0.4: System info, Network, Boost, Privacy ----
+  const specs = { manufacturer: "Micro-Star International Co., Ltd.", model: "MS-7E26", pcName: "GAMING-PC", board: "MSI MAG B650 TOMAHAWK WIFI", bios: "American Megatrends 1.A0", biosDate: "2025-03-12", firmware: "UEFI, Secure Boot on", serial: "To be filled by O.E.M.", os: "Microsoft Windows 11 Pro", osVersion: "24H2", osBuild: "26100.2314", osArch: "64-bit", installed: "2024-11-02", lastBoot: "2026-10-21 08:14", cpu: "AMD Ryzen 7 7800X3D 8-Core Processor", cores: 8, threads: 16, maxMhz: 4201, memory: 32 * GB, memorySlots: 4, modules: [{ slot: "DIMM A2", size: 16 * GB, speed: 6000, maker: "G.Skill", part: "F5-6000J3038F16G" }, { slot: "DIMM B2", size: 16 * GB, speed: 6000, maker: "G.Skill", part: "F5-6000J3038F16G" }], gpus: [{ name: "NVIDIA GeForce RTX 4070", driver: "32.0.15.6614", driverDate: "2025-09-30", memory: 12 * GB, resolution: "2560 x 1440", refresh: 165 }], disks: [{ name: "Samsung SSD 990 PRO 1TB", media: "SSD", bus: "NVMe", size: 1000 * GB, health: "Healthy" }, { name: "WDC WD20EZBX", media: "HDD", bus: "SATA", size: 2000 * GB, health: "Healthy" }], battery: null };
+  const adapters = [{ index: 12, name: "Wi-Fi", description: "Intel Wi-Fi 6E AX211", wireless: true, linkSpeed: 1.2e9, mac: "A4-C3-F0-11-22-33", ipv4: ["192.168.1.24"], ipv6: [], gateway: ["192.168.1.1"], dns: ["192.168.1.1"], dnsAutomatic: true }];
+  const tweaks = [
+    ["ads-id", "Turn off the advertising ID", "Apps can't use an ID to show you personalized ads.", "Ads and suggestions", true, false, false, true],
+    ["start-suggestions", "No app suggestions in Start", "Stops promoted apps showing in Start.", "Ads and suggestions", true, false, false, false],
+    ["explorer-ads", "No OneDrive and Microsoft 365 ads in File Explorer", "Hides sync provider notifications.", "Ads and suggestions", true, false, true, false],
+    ["tailored", "No tailored experiences", "Microsoft won't use diagnostic data for tips and ads.", "Privacy", true, false, false, false],
+    ["telemetry", "Send only required diagnostic data", "Sends the minimum Windows needs. Needs administrator.", "Privacy", false, true, false, false],
+    ["bing", "No Bing web results in Start search", "Start searches only your PC.", "Search and taskbar", true, false, true, false],
+  ].map(([id, title, description, group, recommended, admin, explorer, applied]) => ({ id, title, description, group, recommended, admin, explorer, applied }));
+  let bloat = [["king.com.CandyCrushSaga", "Candy Crush Saga", true], ["Microsoft.BingNews", "Microsoft News", true], ["Microsoft.BingWeather", "Weather", false], ["Clipchamp.Clipchamp", "Clipchamp", true], ["Microsoft.GetHelp", "Get Help", false]].map(([pkg, label, recommended]) => ({ label, package: pkg, fullName: `${pkg}_1.0_x64__8wekyb3d8bbwe`, family: `${pkg}_8wekyb3d8bbwe`, recommended }));
+  const boost = { settings: { powerPlan: true, closeApps: ["OneDrive.exe"], reopenApps: true, pauseServices: true }, state: { active: false, startedAt: 0, previousPlan: null, closed: [], pausedServices: [], done: [] } };
+  let speedCancel = false;
   const handlers = {
-    get_app_info: () => ({ elevated: !!window.__MOCK_ELEVATED__, version: "0.3.0" }),
+    get_specs: async () => (await sleep(800), specs),
+    get_network_info: () => ({ adapters, wifi: { ssid: window.__MOCK_WIFI_LOCATION__ ? null : "Home-5G", signal: 82, rxMbps: 1201, txMbps: 960, channel: 36, standard: "Wi-Fi 6E", needsLocation: !!window.__MOCK_WIFI_LOCATION__ } }),
+    get_public_info: async () => (await sleep(400), { ip: "203.0.113.42", isp: "Example Fiber", city: "Riyadh", country: "SA" }),
+    network_speed_test: async ({ onEvent }) => {
+      speedCancel = false;
+      await sleep(400);
+      send(onEvent, { type: "ping", ms: 11.4 });
+      for (const [phase, top] of [["download", 480], ["upload", 92]]) {
+        for (let i = 1; i <= 10; i++) {
+          if (speedCancel) return { pingMs: 11.4, jitterMs: 0, downMbps: 0, upMbps: 0, public: {}, cancelled: true, dataMb: 0 };
+          await sleep(250);
+          send(onEvent, { type: "progress", phase, mbps: top * (0.7 + i * 0.03), percent: i * 10 });
+        }
+      }
+      return { pingMs: 11.4, jitterMs: 1.8, downMbps: 487.3, upMbps: 94.1, public: { ip: "203.0.113.42", isp: "Example Fiber", city: "Riyadh", country: "SA" }, cancelled: false, dataMb: 312 };
+    },
+    network_cancel_speed_test: () => {
+      speedCancel = true;
+    },
+    network_connections: () => [
+      { name: "chrome.exe", exe: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", pids: [1200, 1300], connections: 24, remotes: ["142.250.74.46", "151.101.1.140", "104.18.32.7", "13.107.42.14"] },
+      { name: "Discord.exe", exe: null, pids: [2200], connections: 3, remotes: ["162.159.135.234"] },
+      { name: "OneDrive.exe", exe: null, pids: [3300], connections: 2, remotes: ["13.107.42.12"] },
+    ],
+    network_set_dns: ({ provider }) => {
+      if (!window.__MOCK_ELEVATED__) fail("Changing DNS needs administrator rights. Use Restart as administrator first.");
+      const servers = { cloudflare: ["1.1.1.1", "1.0.0.1"], google: ["8.8.8.8", "8.8.4.4"], quad9: ["9.9.9.9"], adguard: ["94.140.14.14"] }[provider];
+      adapters[0].dnsAutomatic = !servers;
+      adapters[0].dns = servers || ["192.168.1.1"];
+      return "dns-undo";
+    },
+    network_dns_benchmark: async ({ current }) => (await sleep(700), [{ provider: null, server: current, ms: 18 }, { provider: "cloudflare", server: "1.1.1.1", ms: 9 }, { provider: "google", server: "8.8.8.8", ms: 14 }, { provider: "quad9", server: "9.9.9.9", ms: 22 }, { provider: "adguard", server: "94.140.14.14", ms: null }]),
+    get_boost: () => ({ ...boost, runningApps: [{ name: "chrome.exe", memory: 2.1 * GB, count: 18 }, { name: "OneDrive.exe", memory: 120e6, count: 1 }, { name: "Teams.exe", memory: 640e6, count: 4 }, { name: "Spotify.exe", memory: 310e6, count: 5 }], elevated: !!window.__MOCK_ELEVATED__, highPerformance: true }),
+    set_boost_settings: ({ settings }) => {
+      boost.settings = settings;
+    },
+    start_boost: async () => {
+      await sleep(600);
+      const done = ["Switched to the High performance power plan", "Closed OneDrive"];
+      boost.state = { active: true, startedAt: Date.now(), previousPlan: "x", closed: [{ name: "OneDrive.exe", path: null }], pausedServices: [], done };
+      return { done, problems: window.__MOCK_ELEVATED__ ? [] : ["Pausing Windows Search and SysMain needs administrator rights, so they were left running."] };
+    },
+    stop_boost: async () => {
+      await sleep(400);
+      boost.state = { active: false, startedAt: 0, previousPlan: null, closed: [], pausedServices: [], done: [] };
+      return { done: ["Switched back to the Balanced power plan", "Reopened OneDrive"], problems: [] };
+    },
+    list_privacy_tweaks: () => tweaks,
+    set_privacy_tweaks: ({ ids, on }) => {
+      tweaks.filter((t) => ids.includes(t.id)).forEach((t) => (t.applied = on));
+      return "privacy-undo";
+    },
+    list_bloat_apps: async () => (await sleep(500), bloat),
+    remove_bloat_apps: async ({ targets }) => {
+      await sleep(600);
+      bloat = bloat.filter((b) => !targets.some((t) => t.fullName === b.fullName));
+      return targets.map((t) => ({ label: t.label, error: null }));
+    },
+    get_app_info: () => ({ elevated: !!window.__MOCK_ELEVATED__, version: "0.4.0" }),
     restart_as_admin: () => fail("You chose No on the administrator prompt, so the app keeps running as before."),
     take_notices: () => (window.__MOCK_NOTICES__ || []).splice(0),
     get_settings: () => ({ ...settings }),

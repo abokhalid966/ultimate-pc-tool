@@ -3,15 +3,21 @@ mod alerts;
 mod apps;
 mod automations;
 mod autostart;
+mod boost;
 mod cleanup;
 mod commands;
+mod gpu;
 mod health;
 mod metrics;
+mod network;
 mod os;
 mod overlay;
+mod privacy;
 mod processes;
+mod ps;
 mod services;
 mod settings;
+mod specs;
 mod startup;
 mod storage;
 mod store;
@@ -338,6 +344,7 @@ pub fn run() {
         )
         .manage(snapshot.clone())
         .manage(automations::Automations::default())
+        .manage(boost::Boost::default())
         .manage(storage::Scans::default())
         .manage(CommandLibrary::default())
         .manage(ActivityLog::default())
@@ -419,6 +426,22 @@ pub fn run() {
             get_settings,
             set_close_action,
             set_alerts,
+            specs::get_specs,
+            privacy::list_privacy_tweaks,
+            privacy::set_privacy_tweaks,
+            privacy::list_bloat_apps,
+            privacy::remove_bloat_apps,
+            boost::get_boost,
+            boost::set_boost_settings,
+            boost::start_boost,
+            boost::stop_boost,
+            network::get_network_info,
+            network::get_public_info,
+            network::network_speed_test,
+            network::network_cancel_speed_test,
+            network::network_connections,
+            network::network_set_dns,
+            network::network_dns_benchmark,
             autostart::get_autostart,
             autostart::set_autostart,
             overlay::set_overlay,

@@ -578,7 +578,7 @@ impl Job {
 }
 
 /// Base64 of the UTF-16LE text, the format `powershell -EncodedCommand` expects.
-fn encode_ps(script: &str) -> String {
+pub fn encode_ps(script: &str) -> String {
     const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let bytes: Vec<u8> = script.encode_utf16().flat_map(|u| u.to_le_bytes()).collect();
     let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
