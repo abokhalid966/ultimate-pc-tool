@@ -37,6 +37,9 @@ pub enum Undo {
     /// Puts privacy registry settings back as they were.
     #[serde(rename_all = "camelCase")]
     Registry { values: Vec<crate::privacy::RegValue> },
+    /// Puts an uninstalled app's leftovers back: folders from the Recycle Bin, registry keys from backups.
+    #[serde(rename_all = "camelCase")]
+    Leftovers { paths: Vec<String>, deleted_at: i64, backups: Vec<String> },
     /// An entry written by a newer version; kept, but it can't be undone here.
     #[serde(other)]
     Unknown,
@@ -120,6 +123,7 @@ impl ActivityLog {
             Undo::RestoreFromRecycleBin { paths, deleted_at } => crate::storage::restore_from_recycle_bin(paths, *deleted_at)?,
             Undo::Dns { index, servers, .. } => crate::network::restore_dns(*index, servers)?,
             Undo::Registry { values } => crate::privacy::restore(values)?,
+            Undo::Leftovers { paths, deleted_at, backups } => crate::apps::leftovers::restore(paths, *deleted_at, backups)?,
             Undo::Unknown => return Err("This action can't be undone".into()),
         }
         self.with(app, |list| {

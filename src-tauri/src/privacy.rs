@@ -234,7 +234,7 @@ pub struct RegValue {
 }
 
 #[cfg(windows)]
-mod reg {
+pub(crate) mod reg {
     use winreg::RegKey;
     use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_SET_VALUE};
 
@@ -277,7 +277,7 @@ mod reg {
 }
 
 #[cfg(not(windows))]
-mod reg {
+pub(crate) mod reg {
     use super::Hive;
     pub fn read(_hive: Hive, _path: &str, _name: &str) -> Option<u32> {
         None

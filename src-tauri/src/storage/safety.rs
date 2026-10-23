@@ -107,6 +107,29 @@ fn parent(path: &str) -> Option<&str> {
     path.rfind('\\').map(|i| &path[..i])
 }
 
+/// App leftovers: like `check`, but a folder directly inside one of `app_roots` (Program Files,
+/// ProgramData, the Start menu's Programs), or one level deeper under a publisher's folder, is
+/// allowed too. A folder that holds any protected folder never is.
+pub fn check_leftover(path: &str, rules: &Rules, app_roots: &[String]) -> Verdict {
+    let Some(p) = normalize(path) else {
+        return Verdict::Blocked("Only folders on this PC's own drives can be removed.".into());
+    };
+    if let Some(rule) = rules.0.iter().find(|r| r.scope != Scope::WarnInside && r.path != p && within(&r.path, &p)) {
+        return Verdict::Blocked(format!("This folder contains {}.", rule.name));
+    }
+    let root = app_roots.iter().filter_map(|r| normalize(r)).find(|r| p != *r && within(&p, r));
+    match root {
+        Some(root) if p[root.len()..].matches('\\').count() <= 2 => {
+            // Only rules that aren't the app folder itself (or a folder around it) still apply.
+            match rules.0.iter().find(|r| r.scope == Scope::Inside && within(&p, &r.path) && !within(&root, &r.path)) {
+                Some(rule) => Verdict::Blocked(format!("This is inside {}. {}", rule.name, rule.why)),
+                None => Verdict::Allowed { warning: None },
+            }
+        }
+        _ => check(path, rules),
+    }
+}
+
 /// Decides whether `path` may be moved to the Recycle Bin, and what to warn about.
 pub fn check(path: &str, rules: &Rules) -> Verdict {
     let Some(p) = normalize(path) else {
@@ -252,5 +275,22 @@ mod tests {
     fn explains_system_files() {
         assert!(system_file_reason("PAGEFILE.SYS").contains("virtual memory"));
         assert!(system_file_reason("other.dat").contains("system item"));
+    }
+
+    #[test]
+    fn leftovers_inside_app_folders_only() {
+        let mut rules = Rules::default();
+        rules.add(r"C:\Windows", Scope::Inside, "your Windows folder", "");
+        rules.add(r"C:\Program Files", Scope::Inside, "the folder where apps are installed", "");
+        rules.add(r"C:\Users\me\AppData\Local\Google\Chrome\User Data", Scope::Inside, "your browser profile", "");
+        let roots = vec![r"C:\Program Files".to_string()];
+        let ok = |p: &str| matches!(check_leftover(p, &rules, &roots), Verdict::Allowed { .. });
+        assert!(ok(r"C:\Program Files\Notepad++"));
+        assert!(ok(r"C:\Program Files\Mozilla\Firefox"));
+        assert!(!ok(r"C:\Program Files"));
+        assert!(!ok(r"C:\Program Files\A\B\C"));
+        assert!(!ok(r"C:\Windows\System32"));
+        assert!(!ok(r"C:\Users\me\AppData\Local\Google\Chrome"));
+        assert!(ok(r"C:\Users\me\AppData\Local\Spotify"));
     }
 }

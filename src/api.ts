@@ -147,6 +147,8 @@ export interface BoostSettings {
   closeApps: string[];
   reopenApps: boolean;
   pauseServices: boolean;
+  pauseUpdates: boolean;
+  quietNotifications: boolean;
 }
 
 export interface BoostInfo {
@@ -865,7 +867,19 @@ export interface WingetOutcome {
   output: string;
 }
 
+export interface Leftover {
+  id: number;
+  kind: "folder" | "registry";
+  path: string;
+  bytes: number;
+  note: string;
+  needsAdmin: boolean;
+}
+
 export const appsApi = {
+  findLeftovers: (name: string, publisher: string | null, location: string | null) => invoke<Leftover[]>("find_app_leftovers", { name, publisher, location }),
+  removeLeftovers: (ids: number[], appName: string) =>
+    invoke<{ removed: number; bytes: number; failed: { path: string; error: string }[]; activityId: string | null }>("remove_app_leftovers", { ids, appName }),
   installed: () => invoke<InstalledApp[]>("list_installed_apps"),
   uninstall: (id: string, quiet: boolean) => invoke<UninstallOutcome>("uninstall_app", { id, quiet }),
   stillInstalled: (id: string) => invoke<boolean>("app_still_installed", { id }),

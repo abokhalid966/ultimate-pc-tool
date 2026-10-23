@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, FolderOpen, PackageOpen, RefreshCw, SearchX, ShieldCheck, Trash2, X, Zap } from "lucide-react";
-import { appsApi, errorText, InstalledApp } from "../../api";
+import { appsApi, errorText, InstalledApp, Leftover } from "../../api";
 import { useConfirm } from "../../components/Confirm";
 import { EmptyState, ErrorState } from "../../components/EmptyState";
 import { Menu } from "../../components/Menu";
@@ -11,6 +11,7 @@ import { bytes } from "../../format";
 import { useOnRefresh } from "../../hooks/useRefresh";
 import { AppAvatar, formatDate } from "./common";
 import { appRemoved, installedApps } from "./data";
+import { LeftoversDialog } from "./LeftoversDialog";
 
 type SortKey = "name" | "size" | "date";
 
@@ -39,6 +40,7 @@ export function InstalledTab({ tabs, elevated, onRestartAsAdmin }: Props) {
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: "name", desc: false });
   const [busy, setBusy] = useState<Busy | null>(null);
   const [gone, setGone] = useState<Set<string>>(new Set());
+  const [leftovers, setLeftovers] = useState<{ app: InstalledApp; items: Leftover[] } | null>(null);
   const watch = useRef<number | null>(null);
 
   // The registry is quick to read, so the list is fresh every time the tab opens.
@@ -78,6 +80,11 @@ export function InstalledTab({ tabs, elevated, onRestartAsAdmin }: Props) {
     setGone((g) => new Set(g).add(app.id));
     toast(`${app.name} was uninstalled.${restart ? " Restart your PC to finish removing it." : ""}`, "success");
     appRemoved();
+    // Then look for what the uninstaller left behind.
+    appsApi
+      .findLeftovers(app.name, app.publisher, app.location)
+      .then((items) => items.length > 0 && setLeftovers({ app, items }))
+      .catch(() => {});
   };
 
   /** The uninstaller handed over to another window: check now and then until the app is gone. */
@@ -108,7 +115,7 @@ export function InstalledTab({ tabs, elevated, onRestartAsAdmin }: Props) {
             {quiet
               ? `${app.name} is removed without any questions or windows.`
               : `Windows opens ${app.name}'s own uninstaller. Follow its steps to finish.`}{" "}
-            Your documents and photos aren't touched.
+            Your documents and photos aren't touched. Afterwards, Optimo looks for leftover files and settings and offers to remove them too.
           </p>
           <dl className="apps-facts">
             {app.publisher && (
@@ -185,6 +192,9 @@ export function InstalledTab({ tabs, elevated, onRestartAsAdmin }: Props) {
 
   return (
     <>
+      {leftovers && (
+        <LeftoversDialog app={leftovers.app} items={leftovers.items} elevated={elevated} onRestartAsAdmin={onRestartAsAdmin} onClose={() => setLeftovers(null)} />
+      )}
       <div className="apps-bar">
         {tabs}
         <span className="spacer" />

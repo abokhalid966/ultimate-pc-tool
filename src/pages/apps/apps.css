@@ -537,3 +537,48 @@
   font-weight: 600;
   white-space: nowrap;
 }
+
+/* Leftovers after an uninstall. */
+.leftovers {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+  max-height: 340px;
+  overflow-y: auto;
+  border: 1px solid var(--card-stroke);
+  border-radius: var(--radius);
+}
+.leftovers li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--fill-subtle);
+}
+.leftovers li:first-child {
+  border-top: 0;
+}
+.leftovers li.disabled {
+  opacity: 0.65;
+}
+.leftovers .check {
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+}
+.leftover-icon {
+  display: grid;
+  place-items: center;
+  color: var(--text-2);
+}
+.leftover-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.leftover-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}

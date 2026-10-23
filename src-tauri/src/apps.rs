@@ -3,6 +3,7 @@
 //! uninstaller. The command that runs always comes from the registry, never from the UI.
 
 mod entry;
+pub mod leftovers;
 
 use std::time::Duration;
 

@@ -359,6 +359,7 @@ pub fn run() {
         .manage(storage::Scans::default())
         .manage(storage::Dupes::default())
         .manage(clipboard::Clipboard::default())
+        .manage(apps::leftovers::Leftovers::default())
         .manage(CommandLibrary::default())
         .manage(ActivityLog::default())
         .manage(Terminals::default())
@@ -530,6 +531,8 @@ pub fn run() {
             storage::dupes::storage_cancel_duplicates,
             storage::dupes::storage_delete_duplicates,
             drivers::get_drivers,
+            apps::leftovers::find_app_leftovers,
+            apps::leftovers::remove_app_leftovers,
             clipboard::clipboard_list,
             clipboard::clipboard_copy,
             clipboard::clipboard_paste,

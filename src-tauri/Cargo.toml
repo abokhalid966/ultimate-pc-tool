@@ -1,6 +1,6 @@
 [package]
 name = "ultimate-pc-tool"
-version = "0.6.0"
+version = "0.7.0"
 description = "All-in-one Windows PC monitor, command center and system manager"
 authors = ["abokhalid"]
 edition = "2024"

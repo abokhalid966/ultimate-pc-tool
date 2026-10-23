@@ -535,7 +535,7 @@ window.__TAURI_INTERNALS__ = (() => {
     ["bing", "No Bing web results in Start search", "Start searches only your PC.", "Search and taskbar", true, false, true, false],
   ].map(([id, title, description, group, recommended, admin, explorer, applied]) => ({ id, title, description, group, recommended, admin, explorer, applied }));
   let bloat = [["king.com.CandyCrushSaga", "Candy Crush Saga", true], ["Microsoft.BingNews", "Microsoft News", true], ["Microsoft.BingWeather", "Weather", false], ["Clipchamp.Clipchamp", "Clipchamp", true], ["Microsoft.GetHelp", "Get Help", false]].map(([pkg, label, recommended]) => ({ label, package: pkg, fullName: `${pkg}_1.0_x64__8wekyb3d8bbwe`, family: `${pkg}_8wekyb3d8bbwe`, recommended }));
-  const boost = { settings: { powerPlan: true, closeApps: ["OneDrive.exe"], reopenApps: true, pauseServices: true }, state: { active: false, startedAt: 0, previousPlan: null, closed: [], pausedServices: [], done: [] } };
+  const boost = { settings: { powerPlan: true, closeApps: ["OneDrive.exe"], reopenApps: true, pauseServices: true, pauseUpdates: true, quietNotifications: true }, state: { active: false, startedAt: 0, previousPlan: null, closed: [], pausedServices: [], done: [] } };
   let speedCancel = false;
   // ---- v0.6: clipboard history ----
   const MIN = 60000;
@@ -663,7 +663,14 @@ window.__TAURI_INTERNALS__ = (() => {
       clipSettings = value;
     },
     clipboard_hide_picker: () => {},
-    get_app_info: () => ({ elevated: !!window.__MOCK_ELEVATED__, version: "0.6.0" }),
+    find_app_leftovers: async ({ name }) => (await sleep(400), [
+      { id: 0, kind: "folder", path: `C:\\Program Files\\${name}`, bytes: 48e6, note: "Program files", needsAdmin: !window.__MOCK_ELEVATED__ },
+      { id: 1, kind: "folder", path: `C:\\Users\\you\\AppData\\Roaming\\${name}`, bytes: 212e6, note: "Your settings for this app", needsAdmin: false },
+      { id: 2, kind: "folder", path: `C:\\Users\\you\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\${name}`, bytes: 4e3, note: "Start menu shortcuts", needsAdmin: false },
+      { id: 3, kind: "registry", path: `HKEY_CURRENT_USER\\Software\\${name}`, bytes: 0, note: "Settings in the registry", needsAdmin: false },
+    ]),
+    remove_app_leftovers: async ({ ids }) => (await sleep(500), { removed: ids.length, bytes: 212e6, failed: [], activityId: "left-undo" }),
+    get_app_info: () => ({ elevated: !!window.__MOCK_ELEVATED__, version: "0.7.0" }),
     restart_as_admin: () => fail("You chose No on the administrator prompt, so the app keeps running as before."),
     take_notices: () => (window.__MOCK_NOTICES__ || []).splice(0),
     get_settings: () => ({ ...settings }),

@@ -16,6 +16,11 @@ const FILE: &str = "boost.json";
 pub const CHANGED_EVENT: &str = "boost://changed";
 /// Background services that compete with games for the disk and memory. Both restart on their own.
 const SERVICES: [(&str, &str); 2] = [("WSearch", "Windows Search indexing"), ("SysMain", "SysMain")];
+/// Stopped while Boost is on, so updates don't download or install mid-game.
+const UPDATE_SERVICES: [(&str, &str); 3] = [("wuauserv", "Windows Update"), ("UsoSvc", "Update Orchestrator"), ("DoSvc", "Delivery Optimization")];
+/// The "Get notifications from apps and other senders" switch.
+const TOASTS_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\PushNotifications";
+const TOASTS_VALUE: &str = "ToastEnabled";
 /// Never offered for closing.
 const KEEP: [&str; 6] = ["explorer.exe", "optimo.exe", "ultimate-pc-tool.exe", "dwm.exe", "steam.exe", "discord.exe"];
 
@@ -27,11 +32,13 @@ pub struct BoostSettings {
     pub close_apps: Vec<String>,
     pub reopen_apps: bool,
     pub pause_services: bool,
+    pub pause_updates: bool,
+    pub quiet_notifications: bool,
 }
 
 impl Default for BoostSettings {
     fn default() -> Self {
-        Self { power_plan: true, close_apps: Vec::new(), reopen_apps: true, pause_services: true }
+        Self { power_plan: true, close_apps: Vec::new(), reopen_apps: true, pause_services: true, pause_updates: true, quiet_notifications: true }
     }
 }
 
@@ -51,6 +58,9 @@ pub struct BoostState {
     pub previous_plan: Option<String>,
     pub closed: Vec<ClosedApp>,
     pub paused_services: Vec<String>,
+    /// Boost turned app notifications off; `notifications_before` is the value to put back.
+    pub notifications_off: bool,
+    pub notifications_before: Option<u32>,
     /// What Boost did, for the page.
     pub done: Vec<String>,
 }
@@ -238,6 +248,43 @@ pub fn start(app: &AppHandle) -> Result<BoostResult, String> {
         }
     }
 
+    if settings.pause_updates {
+        if os::is_elevated() {
+            let mut paused = Vec::new();
+            for (name, label) in UPDATE_SERVICES {
+                if services::is_running(name) {
+                    match services::pause(name, label) {
+                        Ok(()) => {
+                            state.paused_services.push(name.to_string());
+                            paused.push(label.to_string());
+                        }
+                        Err(e) => problems.push(e),
+                    }
+                }
+            }
+            done.push(if paused.is_empty() { "Windows Update was already idle".to_string() } else { "Paused Windows Update".to_string() });
+        } else {
+            problems.push("Pausing Windows Update needs administrator rights, so updates can still download.".into());
+        }
+    }
+
+    if settings.quiet_notifications {
+        use crate::privacy::{Hive, reg};
+        let before = reg::read(Hive::CurrentUser, TOASTS_KEY, TOASTS_VALUE);
+        if before == Some(0) {
+            done.push("Notifications were already off".to_string());
+        } else {
+            match reg::write(Hive::CurrentUser, TOASTS_KEY, TOASTS_VALUE, Some(0)) {
+                Ok(()) => {
+                    state.notifications_off = true;
+                    state.notifications_before = before;
+                    done.push("Turned off app notifications".to_string());
+                }
+                Err(e) => problems.push(e),
+            }
+        }
+    }
+
     state.done = done.clone();
     boost.save(app, |s| s.state = state)?;
     let detail = if problems.is_empty() { None } else { Some(problems.join("\n")) };
@@ -266,7 +313,7 @@ pub fn stop(app: &AppHandle) -> Result<BoostResult, String> {
     }
     let mut resumed = Vec::new();
     for name in &state.paused_services {
-        let label = SERVICES.iter().find(|(n, _)| n == name).map_or(name.as_str(), |(_, l)| l);
+        let label = SERVICES.iter().chain(UPDATE_SERVICES.iter()).find(|(n, _)| n == name).map_or(name.as_str(), |(_, l)| l);
         match services::resume(name, label) {
             Ok(()) => resumed.push(label.to_string()),
             Err(e) => problems.push(e),
@@ -274,6 +321,16 @@ pub fn stop(app: &AppHandle) -> Result<BoostResult, String> {
     }
     if !resumed.is_empty() {
         done.push(format!("Started {} again", join(&resumed)));
+    }
+    if state.notifications_off {
+        use crate::privacy::{Hive, reg};
+        // Only if it's still the way Boost left it.
+        if reg::read(Hive::CurrentUser, TOASTS_KEY, TOASTS_VALUE) == Some(0) {
+            match reg::write(Hive::CurrentUser, TOASTS_KEY, TOASTS_VALUE, state.notifications_before) {
+                Ok(()) => done.push("Turned notifications back on".to_string()),
+                Err(e) => problems.push(e),
+            }
+        }
     }
     if settings.reopen_apps && !state.closed.is_empty() {
         let running = fresh_processes();

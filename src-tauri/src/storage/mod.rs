@@ -367,6 +367,54 @@ fn recycle(_path: &Path, _owner: Option<isize>) -> Result<(), String> {
     Err("Moving to the Recycle Bin is only supported on Windows".into())
 }
 
+/// For removing an uninstalled app's leftover folders: why `path` can't go, if it can't.
+pub fn check_leftover(app: &AppHandle, path: &Path) -> Result<(), String> {
+    let rules = protection_rules(app);
+    let roots = leftover_roots();
+    let real = std::fs::canonicalize(path).map_err(|_| "It no longer exists.".to_string())?;
+    for p in [scan::display(path), scan::display(&real)] {
+        if let Verdict::Blocked(why) = safety::check_leftover(&p, &rules, &roots) {
+            return Err(why);
+        }
+    }
+    if std::fs::symlink_metadata(path).map(|m| m.file_type().is_symlink()).unwrap_or(true) {
+        return Err("This is a link to another place, so it isn't removed.".into());
+    }
+    #[cfg(windows)]
+    if !win::has_recycle_bin(&real) {
+        return Err("This drive has no Recycle Bin, so it would be deleted for good.".into());
+    }
+    Ok(())
+}
+
+/// A path as shown to people, without the `\\?\` prefix.
+pub fn display(path: &Path) -> String {
+    scan::display(path)
+}
+
+/// Where apps install themselves and their Start menu shortcuts.
+pub fn leftover_roots() -> Vec<String> {
+    let env = |v: &str| std::env::var_os(v).map(PathBuf::from);
+    let start = PathBuf::from(r"Microsoft\Windows\Start Menu\Programs");
+    [env("ProgramFiles"), env("ProgramFiles(x86)"), env("ProgramData"), env("ProgramData").map(|d| d.join(&start)), env("APPDATA").map(|d| d.join(&start))]
+        .into_iter()
+        .flatten()
+        .map(|p| scan::display(&p))
+        .collect()
+}
+
+/// Moves one path to the Recycle Bin, in front of the main window.
+pub fn recycle_path(app: &AppHandle, path: &Path) -> Result<(), String> {
+    #[cfg(windows)]
+    let owner = app.get_webview_window("main").and_then(|w| w.hwnd().ok()).map(|h| h.0 as isize);
+    #[cfg(not(windows))]
+    let owner = {
+        let _ = app;
+        None
+    };
+    recycle(path, owner)
+}
+
 /// Used by Activity's Undo.
 #[cfg(windows)]
 pub fn restore_from_recycle_bin(paths: &[String], deleted_at: i64) -> Result<(), String> {

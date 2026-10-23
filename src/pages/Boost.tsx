@@ -85,7 +85,7 @@ export function Boost({ onRestartAsAdmin }: { onRestartAsAdmin: () => void }) {
 
   return (
     <div className="page">
-      <PageHeader title="Boost" subtitle="One click to give games and heavy apps the most power. One more click puts everything back." />
+      <PageHeader title="Boost" subtitle="Game mode: one click gives games the most power and quiet, with no updates, pop-ups or background apps. One more click puts everything back." />
 
       <section className={`card boost-hero ${active ? "on" : ""}`}>
         <button className="boost-button" onClick={toggle} disabled={!info || busy} aria-pressed={active}>
@@ -160,6 +160,25 @@ export function Boost({ onRestartAsAdmin }: { onRestartAsAdmin: () => void }) {
                 )}
               </div>
               <Switch label="Pause background indexing" checked={s.pauseServices} disabled={active} onChange={(on) => save({ ...s, pauseServices: on })} />
+            </div>
+            <div className="boost-option">
+              <div>
+                <strong>Pause Windows Update</strong>
+                <p className="muted small">Stops updates from downloading or installing while you play. They carry on when Boost ends.</p>
+                {!info.elevated && s.pauseUpdates && (
+                  <button className="btn btn-sm btn-ghost" onClick={onRestartAsAdmin}>
+                    <ShieldCheck size={14} /> Needs administrator: restart as administrator
+                  </button>
+                )}
+              </div>
+              <Switch label="Pause Windows Update" checked={s.pauseUpdates} disabled={active} onChange={(on) => save({ ...s, pauseUpdates: on })} />
+            </div>
+            <div className="boost-option">
+              <div>
+                <strong>Turn off notifications</strong>
+                <p className="muted small">Hides pop-ups from apps while Boost is on. They come back when Boost ends.</p>
+              </div>
+              <Switch label="Turn off notifications" checked={s.quietNotifications} disabled={active} onChange={(on) => save({ ...s, quietNotifications: on })} />
             </div>
             <div className="boost-option">
               <div>
