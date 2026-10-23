@@ -175,7 +175,7 @@ window.__TAURI_INTERNALS__ = (() => {
     { name: "RtkAudUService", command: '"C:\\Windows\\System32\\DriverStore\\FileRepository\\realtekservice.inf_amd64\\RtkAudUService64.exe" -background', source: "machineRun", location: "Registry (all users)", enabled: true, needsAdmin: true },
     { name: "Notes.lnk", command: "C:\\Users\\me\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\Notes.lnk", source: "userFolder", location: "Startup folder (current user)", enabled: true, needsAdmin: false },
   ];
-  const settings = { closeAction: null, alerts: { enabled: true, cpuPercent: 90, memoryPercent: 90, temperature: 90, diskFreePercent: 10 }, overlay: false };
+  const settings = { closeAction: null, alerts: { enabled: true, cpuPercent: 90, memoryPercent: 90, temperature: 90, diskFreePercent: 10 }, overlay: false, clipboard: { enabled: true, shortcut: true } };
   let autostart = false;
   const HOUR = 3600e3;
   const autos = [
@@ -537,6 +537,15 @@ window.__TAURI_INTERNALS__ = (() => {
   let bloat = [["king.com.CandyCrushSaga", "Candy Crush Saga", true], ["Microsoft.BingNews", "Microsoft News", true], ["Microsoft.BingWeather", "Weather", false], ["Clipchamp.Clipchamp", "Clipchamp", true], ["Microsoft.GetHelp", "Get Help", false]].map(([pkg, label, recommended]) => ({ label, package: pkg, fullName: `${pkg}_1.0_x64__8wekyb3d8bbwe`, family: `${pkg}_8wekyb3d8bbwe`, recommended }));
   const boost = { settings: { powerPlan: true, closeApps: ["OneDrive.exe"], reopenApps: true, pauseServices: true }, state: { active: false, startedAt: 0, previousPlan: null, closed: [], pausedServices: [], done: [] } };
   let speedCancel = false;
+  // ---- v0.6: clipboard history ----
+  const MIN = 60000;
+  let clips = [
+    { id: "c1", text: "https://github.com/abokhalid966/ultimate-pc-tool/releases", at: Date.now() - 2 * MIN, pinned: false },
+    { id: "c2", text: "Meeting moved to Thursday at 4 pm. I'll send the new invite tonight.", at: Date.now() - 18 * MIN, pinned: false },
+    { id: "c3", text: "abokhalid966@users.noreply.github.com", at: Date.now() - 3 * 86400000, pinned: true },
+    { id: "c4", text: "Get-AppxPackage *xbox* | Remove-AppxPackage\nwinget upgrade --all", at: Date.now() - 65 * MIN, pinned: false },
+  ];
+  let clipSettings = { enabled: true, shortcut: true };
   const handlers = {
     get_specs: async () => (await sleep(800), specs),
     get_network_info: () => ({ adapters, wifi: { ssid: window.__MOCK_WIFI_LOCATION__ ? null : "Home-5G", signal: 82, rxMbps: 1201, txMbps: 960, channel: 36, standard: "Wi-Fi 6E", needsLocation: !!window.__MOCK_WIFI_LOCATION__ } }),
@@ -631,7 +640,30 @@ window.__TAURI_INTERNALS__ = (() => {
     },
     storage_cancel_duplicates: () => {},
     storage_delete_duplicates: async ({ paths }) => (await sleep(500), { deleted: paths, bytes: 1.4 * GB, failed: [], activityId: "dupe-undo" }),
-    get_app_info: () => ({ elevated: !!window.__MOCK_ELEVATED__, version: "0.5.0" }),
+    clipboard_list: () => ({ settings: clipSettings, items: clips }),
+    clipboard_copy: ({ id }) => {
+      const c = clips.find((x) => x.id === id);
+      clips = [{ ...c, at: Date.now() }, ...clips.filter((x) => x.id !== id)];
+      emit("clipboard://changed", null);
+    },
+    clipboard_paste: () => {},
+    clipboard_pin: ({ id, pinned }) => {
+      clips = clips.map((c) => (c.id === id ? { ...c, pinned } : c));
+      emit("clipboard://changed", null);
+    },
+    clipboard_delete: ({ id }) => {
+      clips = clips.filter((c) => c.id !== id);
+      emit("clipboard://changed", null);
+    },
+    clipboard_clear: () => {
+      clips = clips.filter((c) => c.pinned);
+      emit("clipboard://changed", null);
+    },
+    set_clipboard_settings: ({ value }) => {
+      clipSettings = value;
+    },
+    clipboard_hide_picker: () => {},
+    get_app_info: () => ({ elevated: !!window.__MOCK_ELEVATED__, version: "0.6.0" }),
     restart_as_admin: () => fail("You chose No on the administrator prompt, so the app keeps running as before."),
     take_notices: () => (window.__MOCK_NOTICES__ || []).splice(0),
     get_settings: () => ({ ...settings }),

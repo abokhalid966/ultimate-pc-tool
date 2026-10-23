@@ -4,11 +4,11 @@ An all-in-one Windows utility: live system monitor, PC health check, cleanup and
 
 Built with [Tauri 2](https://tauri.app) (Rust) and React + TypeScript. The installer is around 10 MB and the app idles at low memory.
 
-## Features (v0.5)
+## Features (v0.6)
 
 | Area | What it does |
 |---|---|
-| **Dashboard** | A plain-language health check ("Your PC is running smoothly", or what needs attention with a one-click fix), live CPU and memory gauges, network and disk graphs, top apps, drive space and sensor temperatures |
+| **Home** | A greeting and four one-click actions (Speed check, Free up space, Boost, Test internet), a plain-language health check ("Your PC is running smoothly", or what needs attention with a one-click fix), live CPU and memory gauges, network and disk graphs, top apps, drive space and sensor temperatures |
 | **PC health** | "Why is my PC slow?": a five-second speed check that gives a 0-100 score and ranked, plain-language issues (apps hogging the processor or memory, full drives, too many startup apps, pending restarts and updates, temp files, Power saver, heat, a busy hard disk), each with a one-click fix and "Fix all safe items" |
 | **Graphics card** | GPU load, video memory and temperature on the Dashboard and in the mini overlay |
 | **System info** | Everything inside the PC in plain words: processor, memory sticks and speed, graphics card and driver, drives and their health, Windows version, motherboard and BIOS, battery health and the full Windows battery report. "Copy specs" puts a short summary on the clipboard (without the serial number) |
@@ -23,11 +23,13 @@ Built with [Tauri 2](https://tauri.app) (Rust) and React + TypeScript. The insta
 | **Storage** | Safe cleanup of temp files, caches, browser caches, the Recycle Bin and Windows Update leftovers; a Space finder that scans a drive or folder and shows a map of the biggest folders and largest files, with Move to Recycle Bin and undo; and a Duplicate finder that compares files byte for byte and moves the extra copies to the Recycle Bin (always keeping one), with undo |
 | **Boost** | One-click game mode: switches to the High performance power plan, closes the apps you pick, and pauses Windows Search indexing and SysMain. One more click (or the tray icon) puts everything back and reopens the apps |
 | **Privacy** | 17 plain-language switches for Windows ads, suggestions, tracking, Bing in Start search and the Copilot button, with "Apply recommended" and undo; and a remover for preinstalled extras like Candy Crush, Clipchamp and Microsoft News |
+| **Clipboard** | History of the text you copy (skips what password managers mark as private), with search, pin and copy again. Press Ctrl+Shift+V in any app to open a small quick-paste box: type to search, Enter pastes. Pinned items are kept; the rest clears when Optimo closes |
 | **Automations** | Routine jobs on a schedule: clean temporary files weekly, clear browser caches, check for app updates daily, run the speed check, or any of your saved commands, when Optimo starts, daily, weekly or every few hours. Missed runs catch up the next time the app is open |
 | **Alerts** | Windows notifications when the processor or memory stays maxed out, the PC runs hot, or a drive is almost full (limits in Settings) |
 | **Mini overlay** | A small always-on-top box with CPU, memory, network and temperature. Drag it anywhere; toggle it from Settings, the tray or Ctrl+K |
 | **Start with Windows** | Optional: opens quietly in the tray at sign-in so alerts and automations keep working |
 | **Activity** | A log of every change the app made, with undo for startup changes, priority changes, service changes, power plans, DNS changes, privacy settings, deleted commands and files moved to the Recycle Bin. Automation runs are logged here too |
+| **Sidebar** | Pages grouped by what you want to do: Speed up, Clean up, Your PC, Tools, and a foldable Advanced group (Services, Terminal, Activity) |
 | **Command palette** | Ctrl+K anywhere: jump to a page, run a saved command, `kill chrome`, or `>` followed by any command to run it in the terminal |
 | **Tray** | Closing the window can keep the app in the tray (it asks the first time), with CPU/RAM in the tooltip |
 | **Settings** | Theme, close button, start with Windows, mini overlay, alert limits, keyboard shortcuts and version info |

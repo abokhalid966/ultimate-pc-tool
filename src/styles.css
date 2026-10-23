@@ -18,9 +18,9 @@
   --sp-6: 24px;
   --sp-7: 32px;
   --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius: 8px;
-  --radius-lg: 12px;
+  --radius-sm: 7px;
+  --radius: 10px;
+  --radius-lg: 14px;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --dur-fast: 110ms;
   --dur: 170ms;
@@ -498,10 +498,33 @@ mark.var {
   gap: 2px;
 }
 .nav-section {
-  padding: 12px 10px 4px;
-  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 10px 10px 3px;
+  font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--text-3);
+}
+.nav-section-toggle {
+  border: 0;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.nav-section-toggle:hover {
+  color: var(--text-2);
+}
+.nav-section-toggle svg {
+  transition: transform var(--dur) var(--ease);
+  transform: rotate(-90deg);
+}
+.nav-section-toggle[aria-expanded="true"] svg {
+  transform: none;
 }
 .nav ul {
   list-style: none;
@@ -516,10 +539,10 @@ mark.var {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
-  height: 36px;
-  padding: 0 10px 0 12px;
+  height: 34px;
+  padding: 0 8px;
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -556,13 +579,31 @@ mark.var {
   height: 16px;
   margin-top: -8px;
   border-radius: 2px;
-  background: var(--accent);
+  background: var(--section, var(--accent));
   animation: nav-pill var(--dur) var(--ease);
 }
 @keyframes nav-pill {
   from {
     transform: scaleY(0.2);
   }
+}
+.nav-icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 7px;
+  color: var(--section, var(--text-2));
+  background: color-mix(in srgb, var(--section, var(--text-2)) 14%, transparent);
+  transition: background var(--dur-fast);
+}
+.nav-item .nav-icon svg,
+.nav-item.active .nav-icon svg {
+  color: inherit;
+}
+.nav-item.active .nav-icon {
+  background: color-mix(in srgb, var(--section, var(--accent)) 26%, transparent);
 }
 .nav-item .nav-badge {
   margin-left: auto;
@@ -573,36 +614,6 @@ mark.var {
   display: flex;
   flex-direction: column;
   gap: 6px;
-}
-
-.sidebar-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0 2px 4px;
-  padding: 10px 12px;
-  border-radius: var(--radius);
-  background: var(--fill-subtle-2);
-  border: 1px solid var(--layer-stroke);
-  font-size: 12px;
-  color: var(--text-2);
-  cursor: pointer;
-  text-align: left;
-  transition: background var(--dur-fast);
-}
-.sidebar-stats:hover {
-  background: var(--fill-subtle);
-}
-.sidebar-stat {
-  display: grid;
-  grid-template-columns: 52px 1fr 34px;
-  align-items: center;
-  gap: 8px;
-}
-.sidebar-stat > span:last-child {
-  text-align: right;
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
 }
 
 .sidebar-foot {
@@ -3118,4 +3129,63 @@ button.pill:hover {
 }
 .text-danger {
   color: var(--danger);
+}
+
+/* Home: quick actions. */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+@container (max-width: 900px) {
+  .quick-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.quick-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  background: var(--card);
+  border: 1px solid var(--card-stroke);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition: transform var(--dur) var(--ease), border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.quick-action:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--qa) 55%, var(--card-stroke));
+}
+.quick-action:active {
+  transform: none;
+}
+.quick-action > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.quick-action-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: var(--radius);
+  color: var(--qa);
+  background: color-mix(in srgb, var(--qa) 15%, transparent);
+}
+.quick-action-go {
+  color: var(--text-3);
+  transition: transform var(--dur) var(--ease);
+}
+.quick-action:hover .quick-action-go {
+  transform: translateX(2px);
+  color: var(--qa);
 }

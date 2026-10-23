@@ -249,6 +249,19 @@ export interface Settings {
   closeAction: CloseAction | null;
   alerts: AlertSettings;
   overlay: boolean;
+  clipboard: ClipboardSettings;
+}
+
+export interface ClipboardSettings {
+  enabled: boolean;
+  shortcut: boolean;
+}
+
+export interface ClipItem {
+  id: string;
+  text: string;
+  at: number;
+  pinned: boolean;
 }
 
 export type AutomationTask =
@@ -664,6 +677,14 @@ export const api = {
   stopBoost: () => invoke<BoostResult>("stop_boost"),
   privacyTweaks: () => invoke<PrivacyTweak[]>("list_privacy_tweaks"),
   setPrivacyTweaks: (ids: string[], on: boolean) => invoke<string | null>("set_privacy_tweaks", { ids, on }),
+  clipboard: () => invoke<{ settings: ClipboardSettings; items: ClipItem[] }>("clipboard_list"),
+  clipboardCopy: (id: string) => invoke<void>("clipboard_copy", { id }),
+  clipboardPaste: (id: string) => invoke<void>("clipboard_paste", { id }),
+  clipboardPin: (id: string, pinned: boolean) => invoke<void>("clipboard_pin", { id, pinned }),
+  clipboardDelete: (id: string) => invoke<void>("clipboard_delete", { id }),
+  clipboardClear: () => invoke<void>("clipboard_clear"),
+  setClipboardSettings: (value: ClipboardSettings) => invoke<void>("set_clipboard_settings", { value }),
+  hideClipPicker: () => invoke<void>("clipboard_hide_picker"),
   drivers: () => invoke<DriverReport>("get_drivers"),
   openDriverLink: (url: string) => invoke<void>("open_driver_link", { url }),
   findDuplicates: (path: string | null, minSize: number, onEvent: Channel<DupeEvent>) => invoke<DupeResult>("storage_find_duplicates", { path, minSize, onEvent }),

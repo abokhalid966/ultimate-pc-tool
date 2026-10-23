@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ChevronRight, CircleCheck, Clock, Cpu, Gpu, HardDrive, HeartPulse, ListTree, MemoryStick, Thermometer, TriangleAlert, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, CircleCheck, Clock, Cpu, Gpu, HardDrive, HeartPulse, ListTree, MemoryStick, Rocket, Sparkles, Thermometer, TriangleAlert, Wifi, X } from "lucide-react";
 import { api, errorText, Metrics, ProcessInfo, SystemOverview } from "../api";
 import type { NavigateOptions } from "../App";
 import { useConfirm } from "../components/Confirm";
@@ -12,6 +12,7 @@ import { useEndProcesses } from "../hooks/useActions";
 import { currentScore, startHealthCheck, useHealthCheck } from "../hooks/useHealthCheck";
 import { MetricsState } from "../hooks/useMetrics";
 import { PageId } from ".";
+import { setTab as setStorageTab } from "./storage/state";
 
 type Level = "ok" | "warn" | "danger";
 
@@ -25,6 +26,54 @@ const LEVEL_COLOR: Record<Level, string> = { ok: "", warn: "var(--warn-fill)", d
 
 const CPU_WORDS: Record<Level, string> = { ok: "Normal", warn: "Busy", danger: "Very busy" };
 const MEM_WORDS: Record<Level, string> = { ok: "Normal", warn: "High", danger: "Very high" };
+
+function greeting(hour = new Date().getHours()): string {
+  return hour < 5 ? "Good evening" : hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+}
+
+/** The four things most people come for, one click each. */
+function QuickActions({ onNavigate }: { onNavigate: Props["onNavigate"] }) {
+  const actions = [
+    {
+      label: "Speed check",
+      hint: "Find slowdowns",
+      icon: HeartPulse,
+      color: "var(--cat-repair)",
+      run: () => {
+        onNavigate("health");
+        startHealthCheck();
+      },
+    },
+    {
+      label: "Free up space",
+      hint: "Remove junk safely",
+      icon: Sparkles,
+      color: "var(--cat-cleanup)",
+      run: () => {
+        setStorageTab("cleanup");
+        onNavigate("storage");
+      },
+    },
+    { label: "Boost", hint: "Game mode", icon: Rocket, color: "var(--accent-text)", run: () => onNavigate("boost") },
+    { label: "Test internet", hint: "Speed and ping", icon: Wifi, color: "var(--cat-network)", run: () => onNavigate("network") },
+  ];
+  return (
+    <div className="quick-actions">
+      {actions.map(({ label, hint, icon: Icon, color, run }) => (
+        <button key={label} className="quick-action" style={{ "--qa": color } as React.CSSProperties} onClick={run}>
+          <span className="quick-action-icon">
+            <Icon size={20} />
+          </span>
+          <span>
+            <strong>{label}</strong>
+            <span className="muted small">{hint}</span>
+          </span>
+          <ChevronRight size={16} className="quick-action-go" />
+        </button>
+      ))}
+    </div>
+  );
+}
 
 interface Props {
   metrics: MetricsState;
@@ -44,10 +93,10 @@ export function Dashboard({ metrics, onNavigate, onCleanTemp }: Props) {
     <div className="page">
       <header className="page-header">
         <div className="page-header-text">
-          <h1>{overview?.hostName || "This PC"}</h1>
+          <h1>{greeting()}</h1>
           {overview ? (
             <p>
-              {overview.osVersion || overview.osName} · {overview.cpuName}
+              {overview.hostName || "This PC"} · {overview.osVersion || overview.osName} · {overview.cpuName}
             </p>
           ) : (
             <Skeleton width={320} height={14} style={{ marginTop: 8 }} />
@@ -67,6 +116,7 @@ export function Dashboard({ metrics, onNavigate, onCleanTemp }: Props) {
 
       {m ? (
         <>
+          <QuickActions onNavigate={onNavigate} />
           <HealthSummary m={m} history={history} onNavigate={onNavigate} onCleanTemp={onCleanTemp} />
           <Tiles m={m} history={history} onNavigate={onNavigate} />
           <div className="dash-grid">

@@ -1,6 +1,6 @@
 [package]
 name = "ultimate-pc-tool"
-version = "0.5.0"
+version = "0.6.0"
 description = "All-in-one Windows PC monitor, command center and system manager"
 authors = ["abokhalid"]
 edition = "2024"
@@ -32,6 +32,7 @@ sha2 = "0.10"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-single-instance = "2.5"
+tauri-plugin-global-shortcut = "2"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.56"
@@ -48,7 +49,9 @@ windows = { version = "0.62", features = [
     "Win32_Security",
     "Win32_Storage_FileSystem",
     "Win32_System_Com",
+    "Win32_System_DataExchange",
     "Win32_System_JobObjects",
+    "Win32_System_Memory",
     "Win32_System_Performance",
     "Win32_System_Power",
     "Win32_System_Registry",
@@ -56,6 +59,7 @@ windows = { version = "0.62", features = [
     "Win32_System_SystemInformation",
     "Win32_System_SystemServices",
     "Win32_System_Threading",
+    "Win32_UI_Input_KeyboardAndMouse",
     "Win32_UI_Shell",
     "Win32_UI_WindowsAndMessaging",
 ] }

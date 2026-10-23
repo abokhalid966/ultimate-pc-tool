@@ -5,6 +5,7 @@ mod automations;
 mod autostart;
 mod boost;
 mod cleanup;
+mod clipboard;
 mod commands;
 mod drivers;
 mod gpu;
@@ -337,6 +338,15 @@ pub fn run() {
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| tray::show_main_window(app)))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, _shortcut, event| {
+                    if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                        clipboard::toggle_picker(app);
+                    }
+                })
+                .build(),
+        )
         // Remembers where the windows were. Showing or hiding stays with the app (tray, --minimized).
         .plugin(
             tauri_plugin_window_state::Builder::new()
@@ -348,6 +358,7 @@ pub fn run() {
         .manage(boost::Boost::default())
         .manage(storage::Scans::default())
         .manage(storage::Dupes::default())
+        .manage(clipboard::Clipboard::default())
         .manage(CommandLibrary::default())
         .manage(ActivityLog::default())
         .manage(Terminals::default())
@@ -375,6 +386,12 @@ pub fn run() {
                 store::notice(app.handle(), e);
             }
             automations::start_scheduler(app.handle().clone());
+            clipboard::start(app.handle().clone());
+            if app.state::<SettingsStore>().get().clipboard.shortcut
+                && let Err(e) = clipboard::set_shortcut(app.handle(), true)
+            {
+                store::notice(app.handle(), e);
+            }
             let handle = app.handle().clone();
             std::thread::spawn(move || {
                 handle.state::<OverviewCache>().get();
@@ -391,6 +408,12 @@ pub fn run() {
             if window.label() == overlay::LABEL {
                 if let WindowEvent::Destroyed = event {
                     metrics::set_overlay_visible(false);
+                }
+                return;
+            }
+            if window.label() == clipboard::PICKER {
+                if let WindowEvent::Focused(false) = event {
+                    clipboard::hide_picker(window.app_handle());
                 }
                 return;
             }
@@ -507,6 +530,14 @@ pub fn run() {
             storage::dupes::storage_cancel_duplicates,
             storage::dupes::storage_delete_duplicates,
             drivers::get_drivers,
+            clipboard::clipboard_list,
+            clipboard::clipboard_copy,
+            clipboard::clipboard_paste,
+            clipboard::clipboard_pin,
+            clipboard::clipboard_delete,
+            clipboard::clipboard_clear,
+            clipboard::set_clipboard_settings,
+            clipboard::clipboard_hide_picker,
             drivers::open_driver_link,
         ])
         .run(tauri::generate_context!())

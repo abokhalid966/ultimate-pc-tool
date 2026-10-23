@@ -18,6 +18,7 @@ const LIMITS: { key: keyof Omit<AlertSettings, "enabled">; label: string; hint: 
 ];
 
 const SHORTCUTS: [string[], string][] = [
+  [["Ctrl", "Shift", "V"], "Quick paste from your clipboard history, in any app"],
   [["Ctrl", "K"], "Search pages, fixes and apps, or run a command"],
   [["Ctrl", "1…9"], "Go to a page in the sidebar"],
   [["F5"], "Refresh the current page"],

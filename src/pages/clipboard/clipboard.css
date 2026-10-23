@@ -1,0 +1,70 @@
+/* Clipboard page. */
+
+.clip-settings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 8px 32px;
+}
+.clip-setting {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.clip-setting p {
+  margin: 2px 0 0;
+}
+.clip-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.clip-toolbar .search {
+  flex: 1;
+  max-width: 480px;
+}
+.clip-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.clip-items li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+}
+.clip-items li.pinned {
+  border-color: var(--accent);
+}
+.clip-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.clip-preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.clip-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}

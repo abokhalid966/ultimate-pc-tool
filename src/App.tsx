@@ -1,13 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { CSSProperties, useCallback, useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
-import { Search, ShieldCheck } from "lucide-react";
+import { ChevronDown, Search, ShieldCheck } from "lucide-react";
 import { api, AppInfo, CloseAction, errorText, SavedCommand, Shell } from "./api";
 import { AppIcon } from "./components/AppIcon";
 import { CommandPalette } from "./components/CommandPalette";
 import { ConfirmProvider } from "./components/Confirm";
 import { Modal } from "./components/Modal";
 import { ToastProvider, useToast } from "./components/Toast";
-import { pct } from "./format";
 import { useCleanTemp } from "./hooks/useActions";
 import { useMetrics } from "./hooks/useMetrics";
 import { REFRESH_EVENT } from "./hooks/useRefresh";
@@ -25,6 +24,7 @@ import { Startup } from "./pages/Startup";
 import { Storage } from "./pages/Storage";
 import { Automations } from "./pages/Automations";
 import { Boost } from "./pages/Boost";
+import { Clipboard } from "./pages/Clipboard";
 import { Drivers } from "./pages/Drivers";
 import { Network } from "./pages/Network";
 import { Privacy } from "./pages/Privacy";
@@ -58,6 +58,22 @@ function AppShell() {
   const [terminalRequest, setTerminalRequest] = useState<TerminalRequest | null>(null);
   const [appInfo, setAppInfo] = useState<AppInfo>({ elevated: false, version: "" });
   const [askClose, setAskClose] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(() => {
+    try {
+      return localStorage.getItem("nav-advanced") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const toggleAdvanced = () =>
+    setAdvancedOpen((open) => {
+      try {
+        localStorage.setItem("nav-advanced", open ? "0" : "1");
+      } catch {
+        // Only a convenience.
+      }
+      return !open;
+    });
 
   useEffect(() => {
     api.appInfo().then(setAppInfo).catch(() => {});
@@ -139,7 +155,6 @@ function AppShell() {
   }, [toast]);
 
   const m = metrics.latest;
-  const memPct = m && m.memTotal ? (m.memUsed / m.memTotal) * 100 : 0;
   const settingsPage = PAGES.find((p) => p.id === "settings")!;
 
   const navButton = ({ id, label, icon: Icon }: (typeof PAGES)[number]) => (
@@ -149,7 +164,9 @@ function AppShell() {
       onClick={() => setPage(id)}
       title={`${label} (Ctrl+${PAGES.findIndex((p) => p.id === id) + 1})`}
     >
-      <Icon size={18} />
+      <span className="nav-icon">
+        <Icon size={16} />
+      </span>
       {label}
     </button>
   );
@@ -172,38 +189,35 @@ function AppShell() {
             </span>
           </button>
           <div className="nav">
-            {SECTIONS.map((section) => (
-              <div key={section}>
-                <div className="nav-section">{section}</div>
-                <ul>
-                  {PAGES.filter((p) => p.section === section).map((p) => (
-                    <li key={p.id}>{navButton(p)}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            {SECTIONS.map((section) => {
+              const pages = PAGES.filter((p) => p.section === section.id);
+              // A folded group still opens when one of its pages is showing.
+              const open = !section.collapsible || advancedOpen || pages.some((p) => p.id === page);
+              return (
+                <div key={section.id} style={{ "--section": section.color } as CSSProperties}>
+                  {section.label &&
+                    (section.collapsible ? (
+                      <button className="nav-section nav-section-toggle" aria-expanded={open} onClick={toggleAdvanced}>
+                        {section.label}
+                        <ChevronDown size={14} />
+                      </button>
+                    ) : (
+                      <div className="nav-section">{section.label}</div>
+                    ))}
+                  {open && (
+                    <ul>
+                      {pages.map((p) => (
+                        <li key={p.id}>{navButton(p)}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <div className="sidebar-bottom">
-            {m && (
-              <button className="sidebar-stats" onClick={() => setPage("dashboard")} title="Open the dashboard">
-                <span className="sidebar-stat">
-                  <span>CPU</span>
-                  <span className="bar">
-                    <span className="bar-fill" style={{ width: `${Math.min(m.cpuTotal, 100)}%`, display: "block" }} />
-                  </span>
-                  <span>{pct(m.cpuTotal)}</span>
-                </span>
-                <span className="sidebar-stat">
-                  <span>Memory</span>
-                  <span className="bar">
-                    <span className="bar-fill mem" style={{ width: `${Math.min(memPct, 100)}%`, display: "block" }} />
-                  </span>
-                  <span>{pct(memPct)}</span>
-                </span>
-              </button>
-            )}
-            {navButton(settingsPage)}
+            <div style={{ "--section": "var(--text-2)" } as CSSProperties}>{navButton(settingsPage)}</div>
             <div className="sidebar-foot">
               {appInfo.elevated ? (
                 <span className="pill pill-warn" title="Everything this app does, including terminal tabs, runs with administrator rights.">
@@ -250,6 +264,7 @@ function AppShell() {
           {page === "storage" && <Storage elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} disks={m?.disks ?? []} />}
           {page === "sysinfo" && <SystemInfo />}
           {page === "drivers" && <Drivers />}
+          {page === "clipboard" && <Clipboard />}
           {page === "network" && <Network elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} />}
           {page === "boost" && <Boost onRestartAsAdmin={restartAsAdmin} />}
           {page === "privacy" && <Privacy elevated={appInfo.elevated} onRestartAsAdmin={restartAsAdmin} />}

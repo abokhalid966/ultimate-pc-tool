@@ -46,6 +46,7 @@ pub struct Settings {
     pub alerts: AlertSettings,
     /// The always-on-top mini overlay with live stats.
     pub overlay: bool,
+    pub clipboard: crate::clipboard::ClipboardSettings,
 }
 
 #[derive(Default)]
